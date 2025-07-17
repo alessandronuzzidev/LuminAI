@@ -1,0 +1,9 @@
+python3 -m venv venv
+source venv/bin/activate 
+pip install --upgrade pip
+pip install watchdog
+pip install PySide6
+pip install pyinstaller
+pyinstaller --windowed --onefile --name LuminAI main.py
+./dist/LuminAI
+
