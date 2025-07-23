@@ -2,43 +2,114 @@ from PySide6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QTextEdit, QScrollArea, QLabel
 )
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import Qt, QSize, QTimer
 from PySide6.QtGui import QIcon, QPalette, QColor
 
 
+from PySide6.QtCore import QThread, Signal, QObject
+
+class LLMWorker(QObject):
+    finished = Signal(str)
+
+    def __init__(self, text, llm_function):
+        super().__init__()
+        self.text = text
+        self.llm_function = llm_function
+
+    def run(self):
+        response = self.llm_function(self.text)
+        self.finished.emit(response)
+
+
+
 class ChatUI(QWidget):
-    def __init__(self, on_config_click=None):
+    def __init__(self, on_config_click=None, controller=None):
         super().__init__()
         self.on_config_click = on_config_click
+        self.controller = controller
         self.setup_window()
         self.create_interface()
 
     def setup_window(self):
         self.setWindowTitle("LuminAI")
         self.setStyleSheet(self.general_style())
+        
+    def create_llm_message(self, text):
+        message = QLabel(text.replace('\n', '<br>'))
+        message.setWordWrap(True)
+        message.setTextFormat(Qt.RichText)
+        message.setStyleSheet(self.llm_message_style())
 
+        self.chat_content_layout.insertWidget(
+            self.chat_content_layout.count() - 1, message, 0
+        )
+        
+        self.chat_container_widget.adjustSize()
+        self.chat_scroll_area.verticalScrollBar().setValue(
+            self.chat_scroll_area.verticalScrollBar().maximum()
+        )
+        
+    def show_llm_response(self, answer):
+        if hasattr(self, "loading_label") and self.loading_label:
+            self.chat_content_layout.removeWidget(self.loading_label)
+            self.loading_label.deleteLater()
+            self.loading_label = None
+
+        self.create_llm_message(answer)
+        self.send_button.setEnabled(True) 
+    
+    def call_llm_and_update(self, text):
+        answer = self.controller.send_message_to_llm(text)
+
+        QTimer.singleShot(0, lambda: self.show_llm_response(answer))
+       
     def create_user_message(self): 
         text = self.input_text.toPlainText().strip()
         if not text:
             return
 
-        message = QLabel(text.replace('\n', '<br>'))
-        message.setWordWrap(True)
-        message.setTextFormat(Qt.RichText)
-        message.setStyleSheet(self.user_message_style())
+        user_message = QLabel(text.replace('\n', '<br>'))
+        user_message.setWordWrap(True)
+        user_message.setTextFormat(Qt.RichText)
+        user_message.setStyleSheet(self.user_message_style())
+        self.chat_content_layout.insertWidget(self.chat_content_layout.count() - 1, user_message, 0)
 
-        self.chat_content_layout.insertWidget(
-            self.chat_content_layout.count() - 1, message, 0
-        )
+        self.loading_label = QLabel("Pensando...")
+        self.loading_label.setWordWrap(True)
+        self.loading_label.setTextFormat(Qt.RichText)
+        self.loading_label.setStyleSheet("font-style: italic; color: #999; padding: 20px;")
+        self.chat_content_layout.insertWidget(self.chat_content_layout.count() - 1, self.loading_label, 0)
 
         self.input_text.clear()
         self.input_text.setFocus()
         self.chat_container_widget.adjustSize()
-
         QApplication.processEvents()
         self.chat_scroll_area.verticalScrollBar().setValue(
             self.chat_scroll_area.verticalScrollBar().maximum()
         )
+
+        self.send_button.setEnabled(False)
+        self.thread = QThread()
+        self.worker = LLMWorker(text, self.controller.send_message_to_llm)
+        self.worker.moveToThread(self.thread)
+
+        self.thread.started.connect(self.worker.run)
+        self.worker.finished.connect(self.show_llm_response)
+        self.worker.finished.connect(self.thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.thread.finished.connect(self.thread.deleteLater)
+
+        self.thread.start()
+        
+    def restart_chat(self):
+        self.controller.restart_chat()
+        while self.chat_content_layout.count() > 0:
+            item = self.chat_content_layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+        
+        self.chat_content_layout.addStretch()
         
     def handle_config_click(self):
         if self.on_config_click:
@@ -55,6 +126,7 @@ class ChatUI(QWidget):
         main_layout.addWidget(self.create_input_area())
 
         self.send_button.clicked.connect(self.create_user_message)
+        self.reset_button.clicked.connect(self.restart_chat)
 
     def create_navbar(self):
         navbar_layout = QHBoxLayout()
@@ -67,11 +139,11 @@ class ChatUI(QWidget):
         image_label.setScaledContents(True)
         image_label.setAlignment(Qt.AlignLeft)
         
-        reset_button = QPushButton()
+        self.reset_button = QPushButton()
         reset_icon = QIcon("assets/reset.svg")
-        reset_button.setIcon(reset_icon)
-        reset_button.setIconSize(QSize(24, 24))
-        reset_button.setStyleSheet(self.navbar_button_style())
+        self.reset_button.setIcon(reset_icon)
+        self.reset_button.setIconSize(QSize(24, 24))
+        self.reset_button.setStyleSheet(self.navbar_button_style())
         #reset_button.clicked.connect(self.create_user_message)
 
         config_button = QPushButton()
@@ -84,7 +156,7 @@ class ChatUI(QWidget):
         navbar_layout.addWidget(image_label)
         navbar_layout.addStretch()
         
-        navbar_layout.addWidget(reset_button)
+        navbar_layout.addWidget(self.reset_button)
         navbar_layout.addWidget(config_button)
 
         navbar = QWidget()
@@ -134,7 +206,7 @@ class ChatUI(QWidget):
         self.microphone_button.setIconSize(QSize(24, 24))
         self.microphone_button.setFixedSize(40, 40)
         self.microphone_button.setStyleSheet(self.button_style())
-        buttons_layout.addWidget(self.microphone_button)
+        #buttons_layout.addWidget(self.microphone_button)
 
         input_layout.addLayout(buttons_layout)
 
@@ -164,6 +236,16 @@ class ChatUI(QWidget):
             font-family: 'Helvetica Neue', sans-serif;
             font-size: 15px;
             color: #202123;
+        """
+        
+    def llm_message_style(self):
+        return """
+            background-color: white;
+            border-radius: 12px;
+            padding: 20px 20px;
+            font-family: 'Helvetica Neue', sans-serif;
+            font-size: 15px;
+            color: black;
         """
 
     def navbar_button_style(self):
