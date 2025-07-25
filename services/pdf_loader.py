@@ -1,30 +1,34 @@
 from abstract_file_loader import AbstractFileLoader
-import fitz
+import os
+import pymupdf
 
 class PDFLoader(AbstractFileLoader):
-    def load(self, file_path):
+    
+    def load(self, file_path, file_name):
         """
         Load the content from the specified PDF file path.
-
         :param file_path: The path to the PDF file to be loaded.
-        :return: The text content of the PDF file.
+        :param file_name: The name of the PDF file to be loaded.
+        :return: A dictionary containing the file name, path, extension, content, and size in bytes.
         """
-        doc = fitz.open(file_path)
-        text = ""
-        for page in doc:
-            text += page.get_text()
-        doc.close()
-        return text
+        full_path = os.path.join(file_path, file_name)
+        with pymupdf.open(full_path) as doc_obj:
+            text = chr(12).join([page.get_text() for page in doc_obj])
+            doc = {
+                "name": file_name,
+                "path": full_path,
+                "extension": "pdf",
+                "content": text.strip().replace("\n", " "),
+                "size_bytes": os.path.getsize(full_path)
+            }
+        return doc
+    
+    def exists(self, file_path, file_name):
+        """
+        Check if the specified PDF file exists.
 
-    def save(self, file_path, content):
+        :param file_path: The path to the PDF file to check.
+        :return: True if the file exists, False otherwise.
         """
-        Save the content to a new PDF file.
-
-        :param file_path: The path where the PDF should be saved.
-        :param content: The text content to be saved in the PDF.
-        """
-        doc = fitz.open()
-        page = doc.new_page()
-        page.insert_text((72, 72), content)  # Insert text at (72, 72) position
-        doc.save(file_path)
-        doc.close()
+        return os.path.exists(os.path.join(file_path, file_name)) and os.path.isfile(os.path.join(file_path, file_name))
+        

@@ -12,6 +12,10 @@ pip install langchain_community
 pip install -qU langchain-ollama
 pip install -U ollama
 
+# Librerias para procesameinto de ficheros
+pip install PyMuPDF
+pip install python-docx
+
 pip install pyinstaller
 
 

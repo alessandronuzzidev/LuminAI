@@ -17,15 +17,6 @@ class AbstractFileLoader(ABC):
         pass
 
     @abstractmethod
-    def save(self, file_path, content):
-        """
-        Save the content to the specified file path.
-
-        :param file_path: The path where the content should be saved.
-        :param content: The content to be saved in the file.
-        """
-        pass
-    
     def exists(self, file_path):
         """
         Check if the specified file exists.
