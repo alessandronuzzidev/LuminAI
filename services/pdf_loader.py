@@ -4,6 +4,9 @@ import pymupdf
 
 class PDFLoader(AbstractFileLoader):
     
+    def __init__(self):
+        super().__init__()
+    
     def load(self, file_path, file_name):
         """
         Load the content from the specified PDF file path.

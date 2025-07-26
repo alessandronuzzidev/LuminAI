@@ -3,9 +3,6 @@ from pathlib import Path
 
 class AbstractFileLoader(ABC):
     
-    def __init__(self, file_path):
-        self.file_path = file_path
-    
     @abstractmethod
     def load(self, file_path):
         """
