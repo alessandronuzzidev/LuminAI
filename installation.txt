@@ -15,6 +15,9 @@ pip install -U ollama
 # Librerias para procesameinto de ficheros
 pip install PyMuPDF
 pip install python-docx
+pip install python-pptx
+pip install openpyxl
+
 
 pip install pyinstaller
 

@@ -9,6 +9,9 @@ class TXTLoader(AbstractFileLoader):
     def load(self, file_path, file_name):
         """
         Load the content from the specified TXT file path.
+        :param file_path: The path to the TXT file to check.
+        :param file_name: The name of the TXT file to check.
+        :return: A dictionary containing the file's metadata and content.
         """
         full_path = os.path.join(file_path, file_name)
         with open(full_path, "r", encoding="utf-8") as f:
