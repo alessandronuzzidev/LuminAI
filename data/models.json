@@ -1,0 +1,29 @@
+[
+  {
+    "name": "llama 3.2",
+    "size": "2.0GB",
+    "context": "128K",
+    "type": "LLM/Embeddings",
+    "framework": "Ollama",
+    "language": "Multilingüe",
+    "command": "ollama run llama3.2"
+  },
+  {
+    "name": "nomic-embed-text",
+    "size": "274MB",
+    "context": "2K",
+    "type": "Embeddings",
+    "framework": "Ollama",
+    "language": "Multilingüe",
+    "command": "ollama pull nomic-embed-text"
+  },
+  {
+    "name": "mxbai-embed-large",
+    "size": "670MB",
+    "context": "512",
+    "type": "Embeddings",
+    "framework": "Ollama",
+    "language": "Multilingüe",
+    "command": "ollama pull mxbai-embed-large"
+  }
+]

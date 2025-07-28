@@ -1,4 +1,6 @@
 {
-    "path": "/Users/alessandronuzziherrero/Documents",
-    "model": "Ollama 3.2"
+    "path": "/Users/alessandronuzziherrero/LuminAI/LuminAI/venv",
+    "llm_model": "llama 3.2",
+    "llm_model_activated": true,
+    "embedding_model": "mxbai-embed-large"
 }

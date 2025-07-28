@@ -144,6 +144,7 @@ class ChatUI(QWidget):
         self.reset_button.setIcon(reset_icon)
         self.reset_button.setIconSize(QSize(24, 24))
         self.reset_button.setStyleSheet(self.navbar_button_style())
+        self.reset_button.setCursor(Qt.PointingHandCursor)
         #reset_button.clicked.connect(self.create_user_message)
 
         config_button = QPushButton()
@@ -151,6 +152,7 @@ class ChatUI(QWidget):
         config_button.setIcon(config_icon)
         config_button.setIconSize(QSize(24, 24))
         config_button.setStyleSheet(self.navbar_button_style())
+        config_button.setCursor(Qt.PointingHandCursor)
         config_button.clicked.connect(self.handle_config_click)
 
         navbar_layout.addWidget(image_label)
@@ -199,6 +201,7 @@ class ChatUI(QWidget):
         self.send_button = QPushButton("➤")
         self.send_button.setFixedSize(40, 40)
         self.send_button.setStyleSheet(self.button_style())
+        self.send_button.setCursor(Qt.PointingHandCursor)
         buttons_layout.addWidget(self.send_button)
 
         self.microphone_button = QPushButton()
