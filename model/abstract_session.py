@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from langchain_ollama import ChatOllama
-from langchain_ollama import OllamaEmbeddings
+
 
 
 class AbstractSession(ABC):
@@ -12,9 +11,6 @@ class AbstractSession(ABC):
     def __init__(self):
         self.session_available = False
         self.messages = []
-        self.llm = ChatOllama(model="llama3.2:latest", temperature=0.0, max_tokens=1000)
-        self.embeddings = OllamaEmbeddings(model="nomic-embed-text:latest")
-        
 
     @abstractmethod
     def start_session(self):

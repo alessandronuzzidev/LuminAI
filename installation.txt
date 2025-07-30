@@ -9,8 +9,17 @@ pip install PySide6
 pip install langchain
 pip install langgraph
 pip install langchain_community
-pip install -qU langchain-ollama
-pip install -U ollama
+#pip install -qU langchain-ollama
+#pip install -U ollama
+pip install transformers
+pip install torch
+pip install einops
+pip install blobfile
+pip install accelerate
+pip install langchain sentence-transformers
+pip install -U langchain-huggingface
+pip install -qU langchain-community faiss-cpu
+
 
 # Librerias para procesameinto de ficheros
 pip install PyMuPDF

@@ -1,5 +1,7 @@
 from model.abstract_session import AbstractSession
 from langchain.schema import SystemMessage, HumanMessage
+from langchain_ollama import ChatOllama
+from langchain_ollama import OllamaEmbeddings
 import subprocess
 import requests
 import signal
@@ -12,6 +14,8 @@ class Session(AbstractSession):
     
     def __init__(self):
         super().__init__()
+        self.llm = ChatOllama(model="llama3.2:latest", temperature=0.0, max_tokens=1000)
+        self.embeddings = OllamaEmbeddings(model="nomic-embed-text:latest")
         
     def is_ollama_running(self):
         try:
