@@ -1,9 +1,10 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QLineEdit, QFrame, QFileDialog, QCheckBox, 
-    QMessageBox, QRadioButton, QButtonGroup
+    QMessageBox, QRadioButton, QButtonGroup, QProgressDialog
 )
-from PySide6.QtCore import Qt, QSize
+
+from PySide6.QtCore import Qt, QSize, QThread
 from PySide6.QtGui import QIcon
 
 
@@ -64,9 +65,40 @@ class ConfigurationUI(QWidget):
         if folder:
             self.path_input.setText(folder)
             
+    def update_progress(self, current, total):
+        if self.progress_dialog:
+            self.progress_dialog.setMaximum(total)
+            self.progress_dialog.setValue(current)
+
     def handle_path_input(self):
         path = self.path_input.text()
-        self.controller.file_retrieval()
+        if path != self.old_config["path"]:
+            self.controller.update_path(path)
+            self.old_config = self.controller.load_config_file()
+
+            self.progress_dialog = QProgressDialog("Indexando archivos...", "Cancelar", 0, 0, self)
+            self.progress_dialog.setWindowTitle("Indexando")
+            self.progress_dialog.setWindowModality(Qt.ApplicationModal)
+            self.progress_dialog.setMinimumDuration(0)
+            self.progress_dialog.setValue(0)
+            self.progress_dialog.show()
+
+            # Crear hilo y worker
+            self.thread = QThread()
+            self.worker = self.controller.file_indexer()
+            self.worker.moveToThread(self.thread)
+
+            # Conectar señales
+            self.worker.progress.connect(self.update_progress)
+            self.worker.finished.connect(self.thread.quit)
+            self.worker.finished.connect(self.progress_dialog.close)
+            self.thread.started.connect(self.worker.run)
+            self.thread.finished.connect(self.thread.deleteLater)
+
+            self.thread.start()
+        else:
+            print("Same dir!!!")
+
             
     def add_path_input(self, content_layout):
         title = QLabel("Configuración de ruta de documentos")

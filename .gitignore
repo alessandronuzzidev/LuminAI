@@ -4,3 +4,4 @@ venv
 data/token_hf.json
 data/tfmorchestator_key.pem
 dataset/**/**
+chroma_db/**

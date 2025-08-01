@@ -1,4 +1,4 @@
-from abstract_embeddings_service import AbstractEmbeddingsService
+from services.abstract_embeddings_service import AbstractEmbeddingsService
 from model.mxbai_embedding import MxbaiEmbedding
 from model.nomic_embedding import NomicEmbedding
 from repository.chroma_repository import ChromaRepository
@@ -38,8 +38,8 @@ class EmbeddingsService(AbstractEmbeddingsService):
             raise ValueError("Modelo de embedding no válido o no inicializado correctamente.")
         if not document:
             raise ValueError("Documento erróneo.")
-        if isinstance(document, str):
-            raise TypeError("El docuemnto debe ser cadena de texto.")
+        if not isinstance(document, str):
+            raise TypeError("El documento debe ser cadena de texto.")
         self.repository.add(page_content=document, metadata=metadata)
     
     def query_embedding(self, query):

@@ -5,7 +5,9 @@ from model.session import Session
 from repository.configuration_file import ConfigurationFile
 from repository.embedding_models_file import EmbeddingModelsFile
 
-from services.file_charger import FileCharger
+from services.embeddings_service import EmbeddingsService
+from services.file_indexer_worker import FileIndexWorker
+from services.text_extractor_service import TextExtractorService
 
 class ControllerGUI(AbstractController):
     def __init__(self):
@@ -14,12 +16,10 @@ class ControllerGUI(AbstractController):
         self.session.start_session()
         self.config_file = ConfigurationFile()
         self.embedding_models_file = EmbeddingModelsFile()
-        self.file_charger = FileCharger()
+        self.file_charger = None
 
     def send_message(self, message):
-        # print(f"Sending message to LLM: {message}")
         answer = self.session.send_message(message)
-        # print(f"Received answer from LLM: {answer}")
         return answer
     
     def get_path(self):
@@ -112,5 +112,6 @@ class ControllerGUI(AbstractController):
             self.embedding_models_file.generate_embedding_models_file(default_embedding_models)
             return default_embedding_models
         
-    def file_retrieval(self):
-        self.file_charger.execute()
+    def file_indexer(self):
+        text_extractor_service = TextExtractorService()
+        return FileIndexWorker(index_function= text_extractor_service.extract_text)

@@ -9,7 +9,7 @@
     "command": "ollama run llama3.2"
   },
   {
-    "name": "nomic-embed-text",
+    "name": "nomic-embed-text-v1.5",
     "size": "274MB",
     "context": "2K",
     "type": "Embeddings",
@@ -18,7 +18,7 @@
     "command": "ollama pull nomic-embed-text"
   },
   {
-    "name": "mxbai-embed-large",
+    "name": "mxbai-embed-large-v1",
     "size": "670MB",
     "context": "512",
     "type": "Embeddings",

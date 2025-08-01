@@ -1,7 +1,7 @@
 from langchain.vectorstores import Chroma
 from langchain_core.documents import Document
 from uuid import uuid4
-from abstract_vector_db_repository import AbstractVectorDBRepository
+from repository.abstract_vector_db_repository import AbstractVectorDBRepository
 
 import os
 import shutil

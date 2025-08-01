@@ -90,7 +90,7 @@ class ChatUI(QWidget):
 
         self.send_button.setEnabled(False)
         self.thread = QThread()
-        self.worker = LLMWorker(text, self.controller.send_message_to_llm)
+        self.worker = LLMWorker(text, self.controller.send_message)
         self.worker.moveToThread(self.thread)
 
         self.thread.started.connect(self.worker.run)

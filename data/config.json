@@ -1,6 +1,6 @@
 {
-    "path": "/Users/alessandronuzziherrero/LuminAI/LuminAI/dataset",
+    "path": "/Users/alessandronuzziherrero/LuminAI/LuminAI/dataset/emails_ia",
     "llm_model": "llama 3.2",
     "llm_model_activated": true,
-    "embedding_model": "mxbai-embed-large"
+    "embedding_model": "nomic-embed-text-v1.5"
 }
