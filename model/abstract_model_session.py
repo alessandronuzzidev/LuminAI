@@ -3,7 +3,7 @@ from pathlib import Path
 
 
 
-class AbstractSession(ABC):
+class AbstractModelSession(ABC):
     """
     Abstract class for managing sessions in the application.
     This class should be extended by any session management implementation.

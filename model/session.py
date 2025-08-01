@@ -1,4 +1,3 @@
-from model.abstract_session import AbstractSession
 from langchain.schema import SystemMessage, HumanMessage
 from langchain_ollama import ChatOllama
 from langchain_ollama import OllamaEmbeddings
@@ -6,7 +5,9 @@ import subprocess
 import requests
 import signal
 
-class Session(AbstractSession):
+from model.abstract_model_session import AbstractModelSession
+
+class Session(AbstractModelSession):
     """
     Session class that extends AbstractSession for managing a chat session.
     It uses the ChatOllama model for generating responses and OllamaEmbeddings for embeddings.

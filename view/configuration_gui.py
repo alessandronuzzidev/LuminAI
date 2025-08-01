@@ -66,7 +66,7 @@ class ConfigurationUI(QWidget):
             
     def handle_path_input(self):
         path = self.path_input.text()
-        self.controller.update_config_path(path)
+        self.controller.file_retrieval()
             
     def add_path_input(self, content_layout):
         title = QLabel("Configuración de ruta de documentos")

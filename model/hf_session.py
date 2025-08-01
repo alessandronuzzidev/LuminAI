@@ -2,9 +2,9 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from langchain.schema import SystemMessage, HumanMessage
 import torch
 
-from abstract_session import AbstractSession
+from model.abstract_model_session import AbstractModelSession
 
-class HFSession(AbstractSession):
+class HFSession(AbstractModelSession):
     
     def __init__(self):
         super().__init__()

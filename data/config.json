@@ -1,5 +1,5 @@
 {
-    "path": "/Users/alessandronuzziherrero/LuminAI/LuminAI/venv",
+    "path": "/Users/alessandronuzziherrero/LuminAI/LuminAI/dataset",
     "llm_model": "llama 3.2",
     "llm_model_activated": true,
     "embedding_model": "mxbai-embed-large"

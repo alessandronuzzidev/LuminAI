@@ -65,7 +65,7 @@ class ChromaRepository(AbstractVectorDBRepository):
             shutil.rmtree(self.persist_directory)
 
 
-from langchain_huggingface import HuggingFaceEmbeddings
+"""from langchain_huggingface import HuggingFaceEmbeddings
 import numpy as np
 
 # Ruta local al modelo clonado o descargado
@@ -113,4 +113,4 @@ for res in results:
 print("Saving FAISS index...")
 
 db.save_index("faiss_index")
-db.delete_all()
+db.delete_all()"""

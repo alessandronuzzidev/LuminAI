@@ -1,16 +1,20 @@
 from controller.abstract_controller import AbstractController
-from model.hf_session import HFSession
+#from model.hf_session import HFSession
+from model.session import Session
 
 from repository.configuration_file import ConfigurationFile
 from repository.embedding_models_file import EmbeddingModelsFile
 
+from services.file_charger import FileCharger
+
 class ControllerGUI(AbstractController):
     def __init__(self):
         super().__init__()
-        self.session = HFSession()
+        self.session = Session()
         self.session.start_session()
         self.config_file = ConfigurationFile()
         self.embedding_models_file = EmbeddingModelsFile()
+        self.file_charger = FileCharger()
 
     def send_message(self, message):
         # print(f"Sending message to LLM: {message}")
@@ -107,3 +111,6 @@ class ControllerGUI(AbstractController):
             default_embedding_models = []
             self.embedding_models_file.generate_embedding_models_file(default_embedding_models)
             return default_embedding_models
+        
+    def file_retrieval(self):
+        self.file_charger.execute()
