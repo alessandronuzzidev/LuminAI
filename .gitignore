@@ -3,3 +3,4 @@ venv
 .DS_Store
 data/token_hf.json
 data/tfmorchestator_key.pem
+dataset/**/**
