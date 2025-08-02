@@ -1,6 +1,6 @@
 from controller.abstract_controller import AbstractController
-#from model.hf_session import HFSession
-from model.session import Session
+from model.hf_session import HFSession
+#from model.session import Session
 
 from repository.configuration_file import ConfigurationFile
 from repository.embedding_models_file import EmbeddingModelsFile
@@ -12,7 +12,7 @@ from services.text_extractor_service import TextExtractorService
 class ControllerGUI(AbstractController):
     def __init__(self):
         super().__init__()
-        self.session = Session()
+        self.session = HFSession()
         self.session.start_session()
         self.config_file = ConfigurationFile()
         self.embedding_models_file = EmbeddingModelsFile()

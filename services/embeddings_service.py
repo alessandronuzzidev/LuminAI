@@ -42,13 +42,20 @@ class EmbeddingsService(AbstractEmbeddingsService):
             raise TypeError("El documento debe ser cadena de texto.")
         self.repository.add(page_content=document, metadata=metadata)
     
-    def query_embedding(self, query):
+    def query_embedding(self, query, top_k):
         """
         Embeds a query and returns its embedding.
         
         :param query: The query to embed.
         :return: The embedded representation of the query.
         """
+        results = self.repository.query(query=query, top_k=top_k)
+    
         output = []
-        output.append(self.repository.query(query=query, top_k=5))
+        for doc in results:
+            if hasattr(doc, "metadata") and "path" in doc.metadata:
+                output.append(doc.metadata["path"])
+            else:
+                output.append("Ruta no disponible")
+
         return output

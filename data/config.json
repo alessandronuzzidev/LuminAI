@@ -1,5 +1,5 @@
 {
-    "path": "/Users/alessandronuzziherrero/LuminAI/LuminAI/dataset/emails_ia",
+    "path": "/Users/alessandronuzziherrero/LuminAI/LuminAI/dataset/films",
     "llm_model": "llama 3.2",
     "llm_model_activated": true,
     "embedding_model": "nomic-embed-text-v1.5"

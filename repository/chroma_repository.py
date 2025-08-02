@@ -32,13 +32,17 @@ class ChromaRepository(AbstractVectorDBRepository):
             metadata=metadata or {},
         )
         self.vector_store.add_documents([document], ids=[str(uuid4())])
+        self.vector_store.persist()
+        
+        del document
+        import gc
+        gc.collect()
         
     def query(self, query, top_k=10, filter=None):
         results = self.vector_store.similarity_search(
             query=query,
             k=top_k,
             filter=filter,
-            # return_source_documents=True  # <-- quitar o comentar esta línea
         )
         return results
         
