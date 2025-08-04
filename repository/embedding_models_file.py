@@ -6,6 +6,11 @@ class EmbeddingModelsFile:
         self.embedding_models_path = embedding_models_path
         
     def generate_embedding_models_file(self, embedding_models_data):
+        """
+        Create embedding models file.
+        
+        :param embedding_models_data: Data of embedding models.
+        """
         embedding_models_dir = os.path.dirname(self.embedding_models_path)
         os.makedirs(embedding_models_dir, exist_ok=True)
         
@@ -14,6 +19,11 @@ class EmbeddingModelsFile:
         print(f"Embedding models file generated at {self.embedding_models_path}")
         
     def load_embedding_models_file(self):
+        """
+        Load embedding models from file.
+        
+        :return: A list with embedding models information.
+        """
         if os.path.exists(self.embedding_models_path):
             with open(self.embedding_models_path, 'r') as embedding_models_file:
                 data = json.load(embedding_models_file)

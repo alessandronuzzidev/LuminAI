@@ -11,10 +11,19 @@ class HFSession(AbstractModelSession):
         self.messages = []
         
     def start_session(self):
+        """
+        Start a new session.
+        """
         self.session_available = True
         print("Session started.")
     
     def send_message(self, message):
+        """
+        Send a message in the current session.
+
+        :param message: The message to be sent.
+        :return: The response from the LLM.
+        """
         top_k = 5
         self.messages.append(message)
         answer = self.embedding_service.query_embedding(message, top_k)
@@ -26,9 +35,17 @@ class HFSession(AbstractModelSession):
         return response_text
 
     def get_messages(self):
+        """
+        Get the messages from the current session.
+
+        :return: A list of messages in the session.
+        """
         return self.messages
     
     def end_session(self):
+        """
+        End the current session.
+        """
         self.messages = None
         self.session_available = False
         print("Session ended.")

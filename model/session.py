@@ -48,7 +48,7 @@ class Session(AbstractModelSession):
         
     def start_session(self):
         """
-        Start a new session by clearing previous messages.
+        Start a new session.
         """
         self.session_available = True
         self.start_ollama_server()
@@ -67,7 +67,7 @@ class Session(AbstractModelSession):
         
     def send_message(self, message):
         """
-        Send a message in the current session and get a response from the LLM.
+        Send a message in the current session.
 
         :param message: The message to be sent.
         :return: The response from the LLM.
@@ -87,7 +87,7 @@ class Session(AbstractModelSession):
     
     def end_session(self):
         """
-        End the current session by clearing messages.
+        End the current session.
         """
         self.messages = None
         self.session_available = False

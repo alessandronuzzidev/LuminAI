@@ -26,8 +26,13 @@ class TextExtractorService:
         }
     
     def extract_text(self, path_str):
-        folder = os.path.dirname(path_str)  # "/ruta/a/carpeta"
+        if not os.path.isfile(path_str):
+            return
+        
+        folder = os.path.dirname(path_str)
         file = os.path.basename(path_str)
+        
+        print(path_str)
         
         embedding_service = EmbeddingsService()
         path = Path(path_str)
@@ -40,8 +45,5 @@ class TextExtractorService:
                 metadata[k] = v
                 
         metadata["path"] = path_str
-        print(path_str)
-        print(doc["content"])
-        print(metadata)
         
         embedding_service.save_documents(doc["content"], metadata)

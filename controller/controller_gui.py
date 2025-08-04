@@ -19,10 +19,20 @@ class ControllerGUI(AbstractController):
         self.file_charger = None
 
     def send_message(self, message):
+        """
+        Send a message to the chat interface.
+
+        :param message: The message to be sent.
+        """
         answer = self.session.send_message(message)
         return answer
     
     def get_path(self):
+        """
+        Retrieve the path for the file loader.
+
+        :return: The path as a string.
+        """
         path = ""
         config_data = self.config_file.load_config_file()
         if config_data and "path" in config_data:
@@ -31,11 +41,21 @@ class ControllerGUI(AbstractController):
         return path 
 
     def update_path(self, new_path):
+        """
+        Update the path for the file loader.
+
+        :param new_path: The new path to be set.
+        """
         config_data = self.config_file.load_config_file()
         config_data["path"] = new_path
         self.config_file.generate_config_file(config_data)
 
     def get_llm_model(self):
+        """
+        Retrieve the current LLM model.
+
+        :return: The LLM model as a string.
+        """
         llm_model = ""
         config_data = self.config_file.load_config_file()
         if config_data and "llm_model" in config_data:
@@ -44,11 +64,21 @@ class ControllerGUI(AbstractController):
         return llm_model
     
     def update_llm_model(self, new_model):
+        """
+        Update the LLM model used by the controller.
+
+        :param new_model: The new LLM model to be set.
+        """
         config_data = self.config_file.load_config_file()
         config_data["llm_model"] = new_model
         self.config_file.generate_config_file(config_data)
         
     def is_llm_model_activated(self):
+        """
+        Check if the LLM model is activated.
+
+        :return: True if the LLM model is activated, False otherwise.
+        """
         activated = False
         config_data = self.config_file.load_config_file()
         if config_data and "llm_model_activated" in config_data:
@@ -57,11 +87,21 @@ class ControllerGUI(AbstractController):
         return activated
     
     def llm_model_change_status(self, active):
+        """
+        Set the activation status of the LLM model.
+
+        :param active: Boolean indicating whether the LLM model should be activated.
+        """
         config_data = self.config_file.load_config_file()
         config_data["llm_model_activated"] = active
         self.config_file.generate_config_file(config_data)
         
     def get_embedding_model(self):
+        """
+        Retrieve the current embedding model.
+
+        :return: The embedding model as a string.
+        """
         embedding_model = ""
         config_data = self.config_file.load_config_file()
         if config_data and "embedding_model" in config_data:
@@ -70,16 +110,29 @@ class ControllerGUI(AbstractController):
         return embedding_model
     
     def update_embedding_model(self, new_model):
+        """
+        Update the embedding model used by the controller.
+
+        :param new_model: The new embedding model to be set.
+        """
         config_data = self.config_file.load_config_file()
         config_data["embedding_model"] = new_model
         self.config_file.generate_config_file(config_data)
     
     def restart_chat(self):
+        """
+        Restart the chat interface.
+        """
         self.session.end_session()
         self.session.start_session()
         pass
     
     def load_config_file(self):
+        """
+        Load the configuration file.
+
+        :return: The configuration data as a dictionary, or None if the file does not exist.
+        """
         config_data = self.config_file.load_config_file()
         if config_data:
             return config_data
@@ -95,6 +148,14 @@ class ControllerGUI(AbstractController):
             return default_config
     
     def update_config_document(self, path=None, llm_model=None, active=None, embedding_model=None):
+        """
+        Initialize the configuration documents with the provided parameters.
+
+        :param path: The path to be set.
+        :param llm_model: The LLM model to be set.
+        :param active: Boolean indicating whether the LLM model should be activated.
+        :param embedding_model: The embedding model to be set.
+        """
         self.config_file.generate_config_file({
             "path": path,
             "llm_model": llm_model,
@@ -103,6 +164,11 @@ class ControllerGUI(AbstractController):
         })
         
     def load_embedding_models_file(self):
+        """
+        Load the embedding models file.
+
+        :return: The embedding models data as a list, or an empty list if the file does not exist.
+        """
         embedding_models_data = self.embedding_models_file.load_embedding_models_file()
         if embedding_models_data:
             return embedding_models_data
@@ -113,5 +179,10 @@ class ControllerGUI(AbstractController):
             return default_embedding_models
         
     def file_indexer(self):
+        """
+        Create Worker for subprocess of loading documents to database.
+        
+        :return: The object that extracts the text from different types of documents.
+        """
         text_extractor_service = TextExtractorService()
         return FileIndexWorker(index_function= text_extractor_service.extract_text)

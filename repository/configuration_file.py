@@ -6,6 +6,11 @@ class ConfigurationFile:
         self.config_path = config_path
 
     def generate_config_file(self, config_data):
+        """
+        Create app configuration file.
+        
+        :param config_data: App configuration data.
+        """
         config_dir = os.path.dirname(self.config_path)
         os.makedirs(config_dir, exist_ok=True)
         
@@ -14,6 +19,11 @@ class ConfigurationFile:
         print(f"Configuration file generated at {self.config_path}")
         
     def load_config_file(self):
+        """
+        Load configuration file.
+        
+        :return: App configuration data.
+        """
         if os.path.exists(self.config_path):
             with open(self.config_path, 'r') as config_file:
                 return json.load(config_file)

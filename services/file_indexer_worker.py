@@ -14,6 +14,9 @@ class FileIndexWorker(QObject):
         self.index_function = index_function
 
     def run(self):
+        """
+        Function that loads the doc content to the system.
+        """
         with open(self.json_path, 'r', encoding='utf-8') as f:
             self.config = json.load(f)
         
