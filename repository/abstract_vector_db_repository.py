@@ -36,8 +36,8 @@ class AbstractVectorDBRepository(ABC):
         pass
     
     @abstractmethod
-    def delete_all(self):
+    def restart(self):
         """
-        Delete all vectors from the database.
+        Restart database.
         """
         pass

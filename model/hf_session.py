@@ -1,5 +1,5 @@
 from langchain.schema import SystemMessage, HumanMessage
-from services.embeddings_service import EmbeddingsService
+import services.embeddings_lib as embedding
 
 from model.abstract_model_session import AbstractModelSession
 
@@ -7,7 +7,6 @@ class HFSession(AbstractModelSession):
     
     def __init__(self):
         super().__init__()
-        self.embedding_service = EmbeddingsService()
         self.messages = []
         
     def start_session(self):
@@ -26,7 +25,7 @@ class HFSession(AbstractModelSession):
         """
         top_k = 5
         self.messages.append(message)
-        answer = self.embedding_service.query_embedding(message, top_k)
+        answer = embedding.query_embedding(message, top_k)
         response_text = "Los documentos más similares son:\n"
         response_text += "\n".join(f"- {doc}" for doc in answer)
 
@@ -46,7 +45,7 @@ class HFSession(AbstractModelSession):
         """
         End the current session.
         """
-        self.messages = None
+        self.messages = []
         self.session_available = False
         print("Session ended.")
         print("Resources cleared.")

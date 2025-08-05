@@ -5,26 +5,34 @@ from uuid import uuid4
 from repository.abstract_vector_db_repository import AbstractVectorDBRepository
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
+import gc
+
 import os
 import shutil
 
 class ChromaRepository(AbstractVectorDBRepository):
-    
+    _instance = None 
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(ChromaRepository, cls).__new__(cls)
+        return cls._instance
+
     def __init__(self, embeddings=None, persist_directory="./chroma_db", collection_name="luminai_collection"):
+        if hasattr(self, "_initialized") and self._initialized:
+            return  
+
+        self.embeddings = embeddings
+        self.collection_name = collection_name
         self.persist_directory = persist_directory
         self.vector_store = Chroma(
             embedding_function=embeddings,
             persist_directory=persist_directory,
             collection_name=collection_name
         )
-        
+        self._initialized = True
+
     def add(self, page_content, metadata=None):
-        """
-        Add a vector to the database.
-        
-        :param vector: The vector to add.
-        :param metadata: Optional metadata associated with the vector.
-        """
         text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=800,
             chunk_overlap=100
@@ -39,17 +47,9 @@ class ChromaRepository(AbstractVectorDBRepository):
         self.vector_store.persist()
         
         del chunks, page_content, metadata
-        import gc
         gc.collect()
         
     def query(self, query, top_k=10, filter=None):
-        """
-        Query the database for the nearest vectors to the given vector.
-        
-        :param vector: The vector to query against.
-        :param top_k: The number of nearest vectors to return.
-        :return: A list of tuples containing the nearest vectors and their metadata.
-        """
         docs = self.vector_store.similarity_search_with_score(
             query=query,
             k=top_k,
@@ -71,17 +71,19 @@ class ChromaRepository(AbstractVectorDBRepository):
         return results
         
     def delete(self, vector_id):
-        """
-        Delete a vector from the database by its ID.
-        
-        :param vector_id: The ID of the vector to delete.
-        """
         print("Delete no implementado en esta versión de Chroma.")
         
-    def delete_all(self):
+    def restart(self):
         """
-        Delete all vectors from the database.
+        Delete all vectors from the database and reset the persistence directory.
         """
         self.vector_store.delete_collection()
-        if os.path.exists(self.persist_directory):
-            shutil.rmtree(self.persist_directory)
+        self.vector_store = None
+
+        self.vector_store = Chroma(
+            embedding_function=self.embeddings,
+            persist_directory=self.persist_directory,
+            collection_name=self.collection_name
+        )
+
+

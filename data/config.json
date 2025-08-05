@@ -1,6 +1,7 @@
 {
     "path": "/Users/alessandronuzziherrero/LuminAI/LuminAI/dataset/films",
-    "llm_model": "llama 3.2",
-    "llm_model_activated": true,
+    "all_doc": true,
+    "summarize": false,
+    "most_important_entities": false,
     "embedding_model": "nomic-embed-text-v1.5"
 }

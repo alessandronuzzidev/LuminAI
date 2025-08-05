@@ -1,11 +1,11 @@
 from controller.abstract_controller import AbstractController
 from model.hf_session import HFSession
-#from model.session import Session
+from PySide6.QtCore import QThread
 
 from repository.configuration_file import ConfigurationFile
 from repository.embedding_models_file import EmbeddingModelsFile
 
-from services.embeddings_service import EmbeddingsService
+import services.embeddings_lib as embedding
 from services.file_indexer_worker import FileIndexWorker
 from services.text_extractor_service import TextExtractorService
 
@@ -50,52 +50,6 @@ class ControllerGUI(AbstractController):
         config_data["path"] = new_path
         self.config_file.generate_config_file(config_data)
 
-    def get_llm_model(self):
-        """
-        Retrieve the current LLM model.
-
-        :return: The LLM model as a string.
-        """
-        llm_model = ""
-        config_data = self.config_file.load_config_file()
-        if config_data and "llm_model" in config_data:
-            llm_model = config_data["llm_model"]
-            
-        return llm_model
-    
-    def update_llm_model(self, new_model):
-        """
-        Update the LLM model used by the controller.
-
-        :param new_model: The new LLM model to be set.
-        """
-        config_data = self.config_file.load_config_file()
-        config_data["llm_model"] = new_model
-        self.config_file.generate_config_file(config_data)
-        
-    def is_llm_model_activated(self):
-        """
-        Check if the LLM model is activated.
-
-        :return: True if the LLM model is activated, False otherwise.
-        """
-        activated = False
-        config_data = self.config_file.load_config_file()
-        if config_data and "llm_model_activated" in config_data:
-            activated = config_data["llm_model_activated"]
-        
-        return activated
-    
-    def llm_model_change_status(self, active):
-        """
-        Set the activation status of the LLM model.
-
-        :param active: Boolean indicating whether the LLM model should be activated.
-        """
-        config_data = self.config_file.load_config_file()
-        config_data["llm_model_activated"] = active
-        self.config_file.generate_config_file(config_data)
-        
     def get_embedding_model(self):
         """
         Retrieve the current embedding model.
@@ -108,16 +62,6 @@ class ControllerGUI(AbstractController):
             embedding_model = config_data["embedding_model"]
         
         return embedding_model
-    
-    def update_embedding_model(self, new_model):
-        """
-        Update the embedding model used by the controller.
-
-        :param new_model: The new embedding model to be set.
-        """
-        config_data = self.config_file.load_config_file()
-        config_data["embedding_model"] = new_model
-        self.config_file.generate_config_file(config_data)
     
     def restart_chat(self):
         """
@@ -140,28 +84,55 @@ class ControllerGUI(AbstractController):
             print("No configuration file found, generating default configuration.")
             default_config = {
                 "path": "",
-                "llm_model": "",
-                "llm_model_activated": False,
-                "embedding_model": ""
+                "all_doc": True,
+                "summarize": False,
+                "most_important_entities": False,
+                "embedding_model": "nomic-embed-text-v1.5"
             }
             self.config_file.generate_config_file(default_config)
             return default_config
+        
+    def update_path(self, path):
+        config_data = self.config_file.load_config_file()
+        content_management = {
+            "all_doc": config_data["all_doc"], 
+            "summarize": config_data["summarize"], 
+            "most_important_entities": config_data["most_important_entities"]
+        }
+        self.update_config_document(path, content_management, config_data["embedding_model"])
     
-    def update_config_document(self, path=None, llm_model=None, active=None, embedding_model=None):
+    def update_config_document(self, path=None, content_management={"all_doc": True, "summarize": False, "most_important_entities": False}, embedding_model=None):
         """
         Initialize the configuration documents with the provided parameters.
 
         :param path: The path to be set.
-        :param llm_model: The LLM model to be set.
-        :param active: Boolean indicating whether the LLM model should be activated.
+        :param content_management: Content management policy.
         :param embedding_model: The embedding model to be set.
         """
+        old_config = self.load_config_file()
         self.config_file.generate_config_file({
             "path": path,
-            "llm_model": llm_model,
-            "llm_model_activated": active,
+            "all_doc": content_management["all_doc"],
+            "summarize": content_management["summarize"],
+            "most_important_entities": content_management["most_important_entities"],
             "embedding_model": embedding_model
         })
+        new_config = self.load_config_file()
+        
+        if path != "" and old_config != new_config:
+            embedding.restart()
+            return True
+        
+        return False
+        
+    def load_content_management(self):
+        config_data = self.config_file.load_config_file()
+        if config_data["most_important_entities"]:
+            return "most_important_entities"
+        elif config_data["summarize"]:
+            return "summarize"
+        else:
+            return "all_doc"
         
     def load_embedding_models_file(self):
         """
@@ -177,6 +148,21 @@ class ControllerGUI(AbstractController):
             default_embedding_models = []
             self.embedding_models_file.generate_embedding_models_file(default_embedding_models)
             return default_embedding_models
+        
+    def thread_function(self, update_function, progress_dialog):
+        # Crear hilo y worker
+        self.thread = QThread()
+        self.worker = self.file_indexer()
+        self.worker.moveToThread(self.thread)
+
+        # Conectar señales
+        self.worker.progress.connect(update_function)
+        self.worker.finished.connect(self.thread.quit)
+        self.worker.finished.connect(progress_dialog.close)
+        self.thread.started.connect(self.worker.run)
+        self.thread.finished.connect(self.thread.deleteLater)
+
+        self.thread.start()
         
     def file_indexer(self):
         """

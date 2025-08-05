@@ -83,19 +83,7 @@ class ConfigurationUI(QWidget):
             self.progress_dialog.setValue(0)
             self.progress_dialog.show()
 
-            # Crear hilo y worker
-            self.thread = QThread()
-            self.worker = self.controller.file_indexer()
-            self.worker.moveToThread(self.thread)
-
-            # Conectar señales
-            self.worker.progress.connect(self.update_progress)
-            self.worker.finished.connect(self.thread.quit)
-            self.worker.finished.connect(self.progress_dialog.close)
-            self.thread.started.connect(self.worker.run)
-            self.thread.finished.connect(self.thread.deleteLater)
-
-            self.thread.start()
+            self.controller.thread_function(update_function=self.update_progress, progress_dialog=self.progress_dialog)
         else:
             print("Same dir!!!")
 
@@ -141,22 +129,37 @@ class ConfigurationUI(QWidget):
         
         content_layout.addWidget(padded_container)
 
-    def add_checkbox_list(self, content_layout):
+
+    def add_radio_option_list(self, content_layout):
         title = QLabel("Configuración de interacción con el sistema")
         title.setStyleSheet(self.title_style())
         content_layout.addWidget(title)
         
+        model_info = QLabel("Seleccione cómo gestionar el contenido de los documentos. (Recuerde que cambiar este ajuste conllevará recalcular los embeddings.)")
+        content_layout.addWidget(model_info)
+
         padded_container = QWidget()
         padded_layout = QVBoxLayout()
         padded_layout.setContentsMargins(10, 0, 10, 0)
         padded_container.setLayout(padded_layout)
 
-        self.llm_checkbox = QCheckBox("    Activar interacción mediante LLM (Ollama 3.2)")
-        self.llm_checkbox.setCursor(Qt.PointingHandCursor)
-        self.llm_checkbox.setChecked(self.old_config["llm_model_activated"])
-        self.llm_checkbox.setStyleSheet(self.text_style())
-        
-        padded_layout.addWidget(self.llm_checkbox)
+        self.radio_text = QRadioButton("    Generar embeddings con el documento completo.")
+        self.radio_llm = QRadioButton("    Utilizar LLM Llama3.2 para utilizar embeddings de un resumen del documento.")
+        self.radio_entities = QRadioButton("    Extraer entidades más importantes del texto y utilizarlas para generar los embeddings.")
+
+        for radio in [self.radio_text, self.radio_llm, self.radio_entities]:
+            radio.setCursor(Qt.PointingHandCursor)
+            radio.setStyleSheet(self.text_style())
+            padded_layout.addWidget(radio)
+
+        self.interaction_group = QButtonGroup()
+        self.interaction_group.addButton(self.radio_text)
+        self.interaction_group.addButton(self.radio_llm)
+        self.interaction_group.addButton(self.radio_entities)
+
+        self.radio_text.setChecked(self.old_config["all_doc"])
+        self.radio_llm.setChecked(self.old_config["summarize"])
+        self.radio_entities.setChecked(self.old_config["most_important_entities"])
 
         content_layout.addWidget(padded_container)
 
@@ -170,7 +173,7 @@ class ConfigurationUI(QWidget):
         padded_layout.setContentsMargins(10, 0, 10, 0)
         padded_container.setLayout(padded_layout)
 
-        model_info = QLabel("Elige el modelo de embedding a utilizar para recuperar y entender la información de tus documentos.")
+        model_info = QLabel("Elige el modelo de embedding a utilizar para gestionar la información de los documentos. (Recuerde que cambiar el modelo conlleva recalcular los embeddings.)")
         model_info.setStyleSheet(self.text_style())
         model_info.setWordWrap(True)
         padded_layout.addWidget(model_info)
@@ -202,8 +205,6 @@ class ConfigurationUI(QWidget):
             specs_text = (
                 f"• Tamaño: {model.get('size', 'N/A')}\n"
                 f"• Contexto: {model.get('context', 'N/A')}\n"
-                f"• Tipo: {model.get('type', 'N/A')}\n"
-                f"• Framework: {model.get('framework', 'N/A')}\n"
                 f"• Lenguaje: {model.get('language', 'N/A')}"
             )
 
@@ -264,11 +265,24 @@ class ConfigurationUI(QWidget):
     
     def save_configuration(self):
         path = self.path_input.text()
-        active = self.llm_checkbox.isChecked()
-        llm_model = "llama 3.2"
         embedding_model = self.selected_model["name"]
+        
+        content_management = {
+            "all_doc": self.radio_text.isChecked(),
+            "summarize": self.radio_llm.isChecked(),
+            "most_important_entities": self.radio_entities.isChecked()
+        }
 
-        self.controller.update_config_document(path, llm_model, active, embedding_model)
+        recharge = self.controller.update_config_document(path, content_management, embedding_model)
+        if recharge:
+            self.progress_dialog = QProgressDialog("Indexando archivos...", "Cancelar", 0, 0, self)
+            self.progress_dialog.setWindowTitle("Indexando")
+            self.progress_dialog.setWindowModality(Qt.ApplicationModal)
+            self.progress_dialog.setMinimumDuration(0)
+            self.progress_dialog.setValue(0)
+            self.progress_dialog.show()
+            
+            self.controller.thread_function(self.update_progress, self.progress_dialog)
 
     
     def create_content_area(self):
@@ -278,7 +292,7 @@ class ConfigurationUI(QWidget):
         content_layout.setAlignment(Qt.AlignTop) 
 
         self.add_path_input(content_layout)
-        self.add_checkbox_list(content_layout)
+        self.add_radio_option_list(content_layout)
         self.add_models(content_layout)
 
         content_widget = QWidget()

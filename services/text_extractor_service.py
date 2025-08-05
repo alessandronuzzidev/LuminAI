@@ -1,4 +1,4 @@
-from services.embeddings_service import EmbeddingsService
+import services.embeddings_lib as embedding
 from services.docx_loader import DOCXLoader
 from services.json_loader import JSONLoader
 from services.markdown_loader import MarkdownLoader
@@ -34,7 +34,6 @@ class TextExtractorService:
         
         print(path_str)
         
-        embedding_service = EmbeddingsService()
         path = Path(path_str)
         suffix = path.suffix
         doc = self.loaders[suffix].load(folder, file)
@@ -46,4 +45,4 @@ class TextExtractorService:
                 
         metadata["path"] = path_str
         
-        embedding_service.save_documents(doc["content"], metadata)
+        embedding.save_documents(doc["content"], metadata)
