@@ -25,8 +25,9 @@ class FileIndexWorker(QObject):
         all_files = []
         for dirpath, _, filenames in os.walk(self.path):
             for filename in filenames:
-                full_path = os.path.join(dirpath, filename)
-                all_files.append(full_path)
+                if filename != ".DS_Store":
+                    full_path = os.path.join(dirpath, filename)
+                    all_files.append(full_path)
 
         total = len(all_files)
 
