@@ -1,5 +1,6 @@
 venv
-**/__pycache__/
+__pycache__/
+ **/__pycache__/
 .DS_Store
 data/token_hf.json
 data/tfmorchestator_key.pem

@@ -22,7 +22,7 @@ class App_GUI(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
         
-        self.setMinimumSize(900, 600)
+        self.setMinimumSize(1100, 720)
         self.resize(1100, 720)
 
     def go_to_configuration_screen(self):

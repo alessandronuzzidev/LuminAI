@@ -62,6 +62,12 @@ class ChatUI(QWidget):
         answer = self.controller.send_message_to_llm(text)
 
         QTimer.singleShot(0, lambda: self.show_llm_response(answer))
+        
+    def scroll_to_bottom(self):
+        QApplication.processEvents()
+        self.chat_scroll_area.verticalScrollBar().setValue(
+            self.chat_scroll_area.verticalScrollBar().maximum()
+        )
        
     def create_user_message(self): 
         text = self.input_text.toPlainText().strip()
@@ -83,10 +89,7 @@ class ChatUI(QWidget):
         self.input_text.clear()
         self.input_text.setFocus()
         self.chat_container_widget.adjustSize()
-        QApplication.processEvents()
-        self.chat_scroll_area.verticalScrollBar().setValue(
-            self.chat_scroll_area.verticalScrollBar().maximum()
-        )
+        self.scroll_to_bottom()
 
         self.send_button.setEnabled(False)
         self.thread = QThread()
@@ -95,6 +98,7 @@ class ChatUI(QWidget):
 
         self.thread.started.connect(self.worker.run)
         self.worker.finished.connect(self.show_llm_response)
+        self.worker.finished.connect(self.scroll_to_bottom)
         self.worker.finished.connect(self.thread.quit)
         self.worker.finished.connect(self.worker.deleteLater)
         self.thread.finished.connect(self.thread.deleteLater)
