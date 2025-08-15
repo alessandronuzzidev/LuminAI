@@ -16,7 +16,7 @@ class JSONLoader(AbstractFileLoader):
         """
         full_path = os.path.join(file_path, file_name)
         with open(full_path, "r", encoding="utf-8") as f:
-            content = json.load(f) 
+            content = f.read()
         
         doc = {
             "name": file_name,

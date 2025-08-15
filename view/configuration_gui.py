@@ -69,6 +69,7 @@ class ConfigurationUI(QWidget):
         if self.progress_dialog:
             self.progress_dialog.setMaximum(total)
             self.progress_dialog.setValue(current)
+            self.progress_dialog.setLabelText(f"Indexando archivos...\nDocumentos procesados: {current} / {total}")
 
     def handle_path_input(self):
         path = self.path_input.text()

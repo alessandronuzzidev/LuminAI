@@ -16,13 +16,13 @@ class YAMLLoader(AbstractFileLoader):
         """
         full_path = os.path.join(file_path, file_name)
         with open(full_path, "r", encoding="utf-8") as f:
-            content = yaml.safe_load(f)
+            content = f.read()
         
         doc = {
             "name": file_name,
             "path": full_path,
             "extension": "yaml",
-            "content": content.strip().replace("\n", " "),
+            "content": content,
             "size_bytes": os.path.getsize(full_path)
         }
         
