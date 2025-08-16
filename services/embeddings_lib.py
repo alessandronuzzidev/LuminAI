@@ -1,5 +1,6 @@
 from model.mxbai_embedding import MxbaiEmbedding
 from model.nomic_embedding import NomicEmbedding
+from model.paraphrase_multilingual_MiniLM_L12_v2 import ParaphraseMultilingualMiniLM
 from repository.chroma_repository import ChromaRepository
 
 import json
@@ -57,7 +58,8 @@ def query_embedding(query, top_k):
 def create_database():
     embedding_models = {
         "mxbai-embed-large-v1": MxbaiEmbedding,
-        "nomic-embed-text-v1.5": NomicEmbedding
+        "nomic-embed-text-v1.5": NomicEmbedding,
+        "paraphrase-multilingual-minilm:l12-v2": ParaphraseMultilingualMiniLM
     }
     
     with open("data/config.json", "r", encoding="utf-8") as f:

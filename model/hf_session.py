@@ -1,4 +1,3 @@
-from langchain.schema import SystemMessage, HumanMessage
 import services.embeddings_lib as embedding
 
 from model.abstract_model_session import AbstractModelSession
@@ -16,7 +15,7 @@ class HFSession(AbstractModelSession):
         self.session_available = True
         print("Session started.")
     
-    def send_message(self, message):
+    def generate_response(self, message):
         """
         Send a message in the current session.
 

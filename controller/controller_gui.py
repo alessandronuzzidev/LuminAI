@@ -1,5 +1,6 @@
 from controller.abstract_controller import AbstractController
-from model.hf_session import HFSession
+#from model.hf_session import HFSession
+from model.session import Session
 from PySide6.QtCore import QThread
 
 from repository.configuration_file import ConfigurationFile
@@ -12,19 +13,19 @@ from services.text_extractor_service import TextExtractorService
 class ControllerGUI(AbstractController):
     def __init__(self):
         super().__init__()
-        self.session = HFSession()
+        self.session = Session()
         self.session.start_session()
         self.config_file = ConfigurationFile()
         self.embedding_models_file = EmbeddingModelsFile()
         self.file_charger = None
 
-    def send_message(self, message):
+    def generate_response(self, message):
         """
         Send a message to the chat interface.
 
         :param message: The message to be sent.
         """
-        answer = self.session.send_message(message)
+        answer = self.session.generate_response(message)
         return answer
     
     def get_path(self):
@@ -171,4 +172,4 @@ class ControllerGUI(AbstractController):
         :return: The object that extracts the text from different types of documents.
         """
         text_extractor_service = TextExtractorService()
-        return FileIndexWorker(index_function= text_extractor_service.extract_text)
+        return FileIndexWorker(index_function= text_extractor_service.extract_and_save_text)

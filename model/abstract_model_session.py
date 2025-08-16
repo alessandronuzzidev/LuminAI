@@ -20,7 +20,7 @@ class AbstractModelSession(ABC):
         raise NotImplementedError("This method should be overridden by subclasses.")
     
     @abstractmethod
-    def send_message(self, message):
+    def generate_response(self, message):
         """
         Send a message in the current session.
 

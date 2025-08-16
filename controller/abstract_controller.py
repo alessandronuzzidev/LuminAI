@@ -4,7 +4,7 @@ from pathlib import Path
 class AbstractController(ABC):
     
     @abstractmethod
-    def send_message(self, message):
+    def generate_response(self, message):
         """
         Send a message to the chat interface.
 

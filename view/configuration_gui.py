@@ -164,6 +164,52 @@ class ConfigurationUI(QWidget):
 
         content_layout.addWidget(padded_container)
 
+    def update_model_selection(self, selected_index):
+        for i, button in enumerate(self.model_buttons):
+            if i == selected_index:
+                button.setText("Seleccionado")
+                button.setStyleSheet(self.model_selected_style())
+            else:
+                button.setText("Seleccionar")
+                button.setStyleSheet(self.model_not_selected_style())
+        self.selected_model_index = selected_index
+        self.selected_model = self.models_data[selected_index]
+
+        
+    def show_confirmation_dialog(self):
+        dialog = QMessageBox(self)
+        dialog.setWindowTitle("Confirmar guardado")
+        dialog.setText("¿Deseas guardar la configuración actual?")
+        
+        btn_aceptar = dialog.addButton("Aceptar", QMessageBox.AcceptRole)
+        dialog.addButton("Cancelar", QMessageBox.RejectRole)
+        
+        dialog.exec()
+
+        if dialog.clickedButton() == btn_aceptar:
+            self.save_configuration()
+    
+    def save_configuration(self):
+        path = self.path_input.text()
+        embedding_model = self.selected_model["name"]
+        
+        content_management = {
+            "all_doc": self.radio_text.isChecked(),
+            "summarize": self.radio_llm.isChecked(),
+            "most_important_entities": self.radio_entities.isChecked()
+        }
+
+        recharge = self.controller.update_config_document(path, content_management, embedding_model)
+        if recharge:
+            self.progress_dialog = QProgressDialog("Indexando archivos...", "Cancelar", 0, 0, self)
+            self.progress_dialog.setWindowTitle("Indexando")
+            self.progress_dialog.setWindowModality(Qt.ApplicationModal)
+            self.progress_dialog.setMinimumDuration(0)
+            self.progress_dialog.setValue(0)
+            self.progress_dialog.show()
+            
+            self.controller.thread_function(self.update_progress, self.progress_dialog)
+
     def add_models(self, content_layout):
         title = QLabel("Selección de modelos de embeddings")
         title.setStyleSheet(self.title_style())
@@ -238,53 +284,6 @@ class ConfigurationUI(QWidget):
             models_layout.addWidget(model_card)
 
         content_layout.addWidget(padded_container)
-
-    def update_model_selection(self, selected_index):
-        for i, button in enumerate(self.model_buttons):
-            if i == selected_index:
-                button.setText("Seleccionado")
-                button.setStyleSheet(self.model_selected_style())
-            else:
-                button.setText("Seleccionar")
-                button.setStyleSheet(self.model_not_selected_style())
-        self.selected_model_index = selected_index
-        self.selected_model = self.models_data[selected_index]
-
-        
-    def show_confirmation_dialog(self):
-        dialog = QMessageBox(self)
-        dialog.setWindowTitle("Confirmar guardado")
-        dialog.setText("¿Deseas guardar la configuración actual?")
-        
-        btn_aceptar = dialog.addButton("Aceptar", QMessageBox.AcceptRole)
-        dialog.addButton("Cancelar", QMessageBox.RejectRole)
-        
-        dialog.exec()
-
-        if dialog.clickedButton() == btn_aceptar:
-            self.save_configuration()
-    
-    def save_configuration(self):
-        path = self.path_input.text()
-        embedding_model = self.selected_model["name"]
-        
-        content_management = {
-            "all_doc": self.radio_text.isChecked(),
-            "summarize": self.radio_llm.isChecked(),
-            "most_important_entities": self.radio_entities.isChecked()
-        }
-
-        recharge = self.controller.update_config_document(path, content_management, embedding_model)
-        if recharge:
-            self.progress_dialog = QProgressDialog("Indexando archivos...", "Cancelar", 0, 0, self)
-            self.progress_dialog.setWindowTitle("Indexando")
-            self.progress_dialog.setWindowModality(Qt.ApplicationModal)
-            self.progress_dialog.setMinimumDuration(0)
-            self.progress_dialog.setValue(0)
-            self.progress_dialog.show()
-            
-            self.controller.thread_function(self.update_progress, self.progress_dialog)
-
     
     def create_content_area(self):
         content_layout = QVBoxLayout()

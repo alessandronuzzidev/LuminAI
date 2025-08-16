@@ -1,10 +1,8 @@
-from langchain.schema import SystemMessage, HumanMessage
-from langchain_ollama import ChatOllama
-from langchain_ollama import OllamaEmbeddings
 import subprocess
 import requests
-import signal
-
+import services.embeddings_lib as embedding
+from .paraphrase_multilingual_MiniLM_L12_v2 import ParaphraseMultilingualMiniLM
+from .llama_llm import LlamaLLM
 from model.abstract_model_session import AbstractModelSession
 
 class Session(AbstractModelSession):
@@ -15,8 +13,9 @@ class Session(AbstractModelSession):
     
     def __init__(self):
         super().__init__()
-        self.llm = ChatOllama(model="llama3.2:latest", temperature=0.0, max_tokens=1000)
-        self.embeddings = OllamaEmbeddings(model="nomic-embed-text:latest")
+        self.embedding_class = ParaphraseMultilingualMiniLM()
+        self.llm = LlamaLLM()
+
         
     def is_ollama_running(self):
         try:
@@ -37,45 +36,28 @@ class Session(AbstractModelSession):
             print("Ollama no está instalado o no está en el PATH.")
         except Exception as e:
             print(f"Error al arrancar Ollama: {e}")
-    
-    def stop_ollama(ollama_process):
-        try:
-            ollama_process.send_signal(signal.SIGINT)
-            ollama_process.wait(timeout=5)
-            print("Ollama detenido correctamente.")
-        except Exception as e:
-            print(f"Error al detener Ollama: {e}")
         
     def start_session(self):
         """
         Start a new session.
         """
         self.session_available = True
-        self.start_ollama_server()
-        self.messages = [
-            SystemMessage(content="Eres un asistente que ayuda a los usuarios del sistema a encontrar los " +
-            "archivos en los que se habla del tema que se le indica. El usuario te dirá el tema " + 
-            "y tú le dirás en qué archivos del sistema se habla de ese tema. Si no se habla de ese tema en " + 
-            "ningún archivo local, entonces le dirás que no se habla de ese tema en ningún archivo. " +
-            "Es necesario que indiques la ruta del archivo especificado en el metadata, en path. " + 
-            "Presentalo como bullet points. Debes ser escueto para que seas lo más rápido posible. " +
-            "Por último, no uses markdown, sino HTML. Por ejemplo, si usas ** para negrita, usa <b> en su lugar. " +
-            "Si usas * para cursiva, usa <i> en su lugar. Si usas ` para código, usa <code> en su lugar. " +
-            "Si usas [texto](enlace), usa <a href='enlace'>texto</a> en su lugar. ")
-        ]
-        print("Session started.")
+
         
-    def send_message(self, message):
+    def generate_response(self, message):
         """
         Send a message in the current session.
 
         :param message: The message to be sent.
         :return: The response from the LLM.
         """
-        self.messages.append(HumanMessage(content=message))
-        response = self.llm.invoke(self.messages)
-        self.messages.append(response)
-        return response.content
+        top_k = 3
+        message_normalized = self.llm.query_normalizer(message)
+        files_paths = embedding.query_embedding(message_normalized, top_k)
+        answer  = self.llm.generate_response(message_normalized, files_paths)
+        
+        return answer
+
     
     def get_messages(self):
         """
@@ -83,13 +65,11 @@ class Session(AbstractModelSession):
 
         :return: A list of messages in the session.
         """
-        return self.messages
+        return self.llm.messages
     
     def end_session(self):
         """
         End the current session.
         """
-        self.messages = None
         self.session_available = False
-        print("Session ended.")
-        print("Resources cleared.")
+        self.llm.reset()

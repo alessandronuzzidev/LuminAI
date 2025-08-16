@@ -24,7 +24,7 @@ class TextExtractorService:
             ".xlsx": XLSXLoader(),
             ".yaml": YAMLLoader()
         }
-    
+        
     def extract_text(self, path_str):
         if not os.path.isfile(path_str):
             return
@@ -32,11 +32,13 @@ class TextExtractorService:
         folder = os.path.dirname(path_str)
         file = os.path.basename(path_str)
         
-        print(path_str)
-        
         path = Path(path_str)
         suffix = path.suffix
         doc = self.loaders[suffix].load(folder, file)
+        return doc
+    
+    def extract_and_save_text(self, path_str):
+        doc = self.extract_text(path_str)
         metadata = {}
         
         for k, v in doc.items():
