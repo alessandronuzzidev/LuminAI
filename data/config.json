@@ -1,5 +1,5 @@
 {
-    "path": "/Users/alessandronuzziherrero/LuminAI/LuminAI/dataset/books",
+    "path": "/Users/alessandronuzziherrero/LuminAI/LuminAI/dataset/films",
     "all_doc": true,
     "summarize": false,
     "most_important_entities": false,
