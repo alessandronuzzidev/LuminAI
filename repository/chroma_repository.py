@@ -86,4 +86,22 @@ class ChromaRepository(AbstractVectorDBRepository):
             collection_name=self.collection_name
         )
 
+    def as_retriever(self, score_threshold=0.7, top_k=5):
+        """
+        Devuelve un retriever que sólo retorna documentos por encima del threshold.
+        """
+        if top_k is None:
+            return self.vector_store.as_retriever(
+                search_type="similarity_score_threshold",
+                search_kwargs={'score_threshold': score_threshold}
+            )
+        else:
+            return self.vector_store.as_retriever(
+                search_type="similarity_score_threshold",
+                search_kwargs={'score_threshold': score_threshold, 'k': top_k}
+            )
+        vectorstore.as_retriever(
+            search_type="similarity_score_threshold",
+            search_kwargs={'score_threshold': threshold, 'k': 10}
+        )
 

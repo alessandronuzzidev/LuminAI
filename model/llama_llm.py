@@ -33,7 +33,7 @@ class LlamaLLM:
         
     def send_message(self, message):
         self.messages.append(HumanMessage(content=message))
-        reply = self.model.invoke(self.messages)
+        reply = self.model.invoke(self.message)
         self.messages.append(reply)
         return reply
 
@@ -72,8 +72,12 @@ class LlamaLLM:
         return answer
     
     def generate_response(self, message_normalized, files_paths):
-        template = """
-            Recibes el texto de un documento y una consulta del usuario. Genera una respuesta breve (5 frases como mucho) que explique el contenido relevante del documento respecto a la consulta.
+        template = template = """
+            Recibes el texto de un documento y una consulta del usuario. Tu tarea es generar un resumen breve, 
+            directo y conciso, de **máximo 5 frases**, enfocándote únicamente en la información del documento 
+            que responda a la consulta. Evita frases introductorias como "El documento trata sobre..." o 
+            "Claro, aquí tienes un resumen...". Ve al grano y explica el contenido relevante.
+
             Documento:
             {document_text}
 
@@ -81,7 +85,12 @@ class LlamaLLM:
             {query}
 
             Respuesta:
+            - Si no encuentras información que esté claramente relacionada con la consulta, responde **solo** con el token especial:
+            LUMINAITOKEN1234567890
+            - Si hay información parcialmente relevante pero no del todo segura, haz un resumen directo sin incluir el token.
+            - Limita la respuesta a un máximo de 5 frases.
         """
+
         extractor = TextExtractorService()
     
         responses = []
@@ -98,6 +107,8 @@ class LlamaLLM:
             
             try:
                 llm_response = self.model.invoke(formatted_prompt)
+                if llm_response.__contains__("LUMINAITOKEN1234567890"):
+                    continue
             except Exception as e:
                 llm_response = f"Error al procesar el archivo: {e}"
 
@@ -105,5 +116,7 @@ class LlamaLLM:
 
             responses.append(f"<b>{filename}</b> <i>{file_path}</i>:<br>{llm_response.strip()}")       
         
+        if responses == []:
+            return "No se ha encontrado información relevante en los documentos."
         return "\n\n".join(responses)
         

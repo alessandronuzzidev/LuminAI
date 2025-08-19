@@ -1,8 +1,8 @@
 from controller.abstract_controller import AbstractController
-#from model.hf_session import HFSession
-from model.session import Session
-from PySide6.QtCore import QThread
 
+from PySide6.QtCore import QThread
+from model.session_semantic_search_rag import SessionSemanticSearchRag
+from model.session_semantic_search import SessionSemanticSearch
 from repository.configuration_file import ConfigurationFile
 from repository.embedding_models_file import EmbeddingModelsFile
 
@@ -10,14 +10,24 @@ import services.embeddings_lib as embedding
 from services.file_indexer_worker import FileIndexWorker
 from services.text_extractor_service import TextExtractorService
 
+
 class ControllerGUI(AbstractController):
     def __init__(self):
         super().__init__()
-        self.session = Session()
-        self.session.start_session()
+        self.sessions_dict = {
+            "RAG": SessionSemanticSearchRag(),
+            "NOT_RAG": SessionSemanticSearch()
+        }
+        
         self.config_file = ConfigurationFile()
         self.embedding_models_file = EmbeddingModelsFile()
         self.file_charger = None
+        configuration = self.config_file.load_config_file()
+        if configuration["checkbox_rag_value"]:
+            self.session = self.sessions_dict["RAG"]
+        else:
+            self.session = self.sessions_dict["NOT_RAG"]
+        self.session.start_session()
 
     def generate_response(self, message):
         """
@@ -27,42 +37,6 @@ class ControllerGUI(AbstractController):
         """
         answer = self.session.generate_response(message)
         return answer
-    
-    def get_path(self):
-        """
-        Retrieve the path for the file loader.
-
-        :return: The path as a string.
-        """
-        path = ""
-        config_data = self.config_file.load_config_file()
-        if config_data and "path" in config_data:
-            path = config_data["path"]
-        
-        return path 
-
-    def update_path(self, new_path):
-        """
-        Update the path for the file loader.
-
-        :param new_path: The new path to be set.
-        """
-        config_data = self.config_file.load_config_file()
-        config_data["path"] = new_path
-        self.config_file.generate_config_file(config_data)
-
-    def get_embedding_model(self):
-        """
-        Retrieve the current embedding model.
-
-        :return: The embedding model as a string.
-        """
-        embedding_model = ""
-        config_data = self.config_file.load_config_file()
-        if config_data and "embedding_model" in config_data:
-            embedding_model = config_data["embedding_model"]
-        
-        return embedding_model
     
     def restart_chat(self):
         """
@@ -79,30 +53,21 @@ class ControllerGUI(AbstractController):
         :return: The configuration data as a dictionary, or None if the file does not exist.
         """
         config_data = self.config_file.load_config_file()
-        if config_data:
-            return config_data
-        else:
-            print("No configuration file found, generating default configuration.")
-            default_config = {
-                "path": "",
-                "all_doc": True,
-                "summarize": False,
-                "most_important_entities": False,
-                "embedding_model": "nomic-embed-text-v1.5"
-            }
-            self.config_file.generate_config_file(default_config)
-            return default_config
+        if not config_data:
+            self.update_config_document(path="")
+            config_data = self.config_file.load_config_file()
+        return config_data
         
     def update_path(self, path):
+        """
+        Update the path for the file loader.
+
+        :param new_path: The new path to be set.
+        """
         config_data = self.config_file.load_config_file()
-        content_management = {
-            "all_doc": config_data["all_doc"], 
-            "summarize": config_data["summarize"], 
-            "most_important_entities": config_data["most_important_entities"]
-        }
-        self.update_config_document(path, content_management, config_data["embedding_model"])
+        self.update_config_document(path, config_data["checkbox_rag_value"], config_data["similarity_threshold_value"])
     
-    def update_config_document(self, path=None, content_management={"all_doc": True, "summarize": False, "most_important_entities": False}, embedding_model=None):
+    def update_config_document(self, path=None, checkbox_rag_value=True, similarity_threshold_value=0.7):
         """
         Initialize the configuration documents with the provided parameters.
 
@@ -113,50 +78,33 @@ class ControllerGUI(AbstractController):
         old_config = self.load_config_file()
         self.config_file.generate_config_file({
             "path": path,
-            "all_doc": content_management["all_doc"],
-            "summarize": content_management["summarize"],
-            "most_important_entities": content_management["most_important_entities"],
-            "embedding_model": embedding_model
+            "checkbox_rag_value": checkbox_rag_value,
+            "similarity_threshold_value": similarity_threshold_value,
+            "embedding_model": old_config["embedding_model"],
+            "llm_model": old_config["llm_model"]
         })
         new_config = self.load_config_file()
         
-        if path != "" and old_config != new_config:
+        if old_config["checkbox_rag_value"] != new_config["checkbox_rag_value"]:
+            self.session.end_session()
+            if new_config["checkbox_rag_value"]:
+                self.session = self.sessions_dict["RAG"]
+                self.session.start_session()
+            else:
+                self.session = self.sessions_dict["NOT_RAG"]
+                self.session.start_session()      
+        
+        if path != "" and old_config["path"] != new_config["path"]:
             embedding.restart()
             return True
         
         return False
         
-    def load_content_management(self):
-        config_data = self.config_file.load_config_file()
-        if config_data["most_important_entities"]:
-            return "most_important_entities"
-        elif config_data["summarize"]:
-            return "summarize"
-        else:
-            return "all_doc"
-        
-    def load_embedding_models_file(self):
-        """
-        Load the embedding models file.
-
-        :return: The embedding models data as a list, or an empty list if the file does not exist.
-        """
-        embedding_models_data = self.embedding_models_file.load_embedding_models_file()
-        if embedding_models_data:
-            return embedding_models_data
-        else:
-            print("No embedding models file found.")
-            default_embedding_models = []
-            self.embedding_models_file.generate_embedding_models_file(default_embedding_models)
-            return default_embedding_models
-        
     def thread_function(self, update_function, progress_dialog):
-        # Crear hilo y worker
         self.thread = QThread()
         self.worker = self.file_indexer()
         self.worker.moveToThread(self.thread)
 
-        # Conectar señales
         self.worker.progress.connect(update_function)
         self.worker.finished.connect(self.thread.quit)
         self.worker.finished.connect(progress_dialog.close)

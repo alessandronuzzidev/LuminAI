@@ -11,15 +11,7 @@ class AbstractController(ABC):
         :param message: The message to be sent.
         """
         pass
-    
-    @abstractmethod
-    def get_path(self):
-        """
-        Retrieve the path for the file loader.
 
-        :return: The path as a string.
-        """
-        pass
     
     @abstractmethod
     def update_path(self, new_path):
@@ -27,15 +19,6 @@ class AbstractController(ABC):
         Update the path for the file loader.
 
         :param new_path: The new path to be set.
-        """
-        pass
-    
-    @abstractmethod
-    def get_embedding_model(self):
-        """
-        Retrieve the current embedding model.
-
-        :return: The embedding model as a string.
         """
         pass
     
@@ -67,11 +50,3 @@ class AbstractController(ABC):
         """
         pass
     
-    @abstractmethod
-    def load_embedding_models_file(self):
-        """
-        Load the embedding models file.
-
-        :return: The embedding models data as a list, or an empty list if the file does not exist.
-        """
-        pass

@@ -1,11 +1,11 @@
 import subprocess
 import requests
 import services.embeddings_lib as embedding
-from .paraphrase_multilingual_MiniLM_L12_v2 import ParaphraseMultilingualMiniLM
 from .llama_llm import LlamaLLM
 from model.abstract_model_session import AbstractModelSession
+from repository.configuration_file import ConfigurationFile
 
-class Session(AbstractModelSession):
+class SessionSemanticSearchRag(AbstractModelSession):
     """
     Session class that extends AbstractSession for managing a chat session.
     It uses the ChatOllama model for generating responses and OllamaEmbeddings for embeddings.
@@ -13,7 +13,6 @@ class Session(AbstractModelSession):
     
     def __init__(self):
         super().__init__()
-        self.embedding_class = ParaphraseMultilingualMiniLM()
         self.llm = LlamaLLM()
 
         
@@ -51,9 +50,11 @@ class Session(AbstractModelSession):
         :param message: The message to be sent.
         :return: The response from the LLM.
         """
-        top_k = 3
         message_normalized = self.llm.query_normalizer(message)
-        files_paths = embedding.query_embedding(message_normalized, top_k)
+        
+        config_file_repo = ConfigurationFile()
+        config_file = config_file_repo.load_config_file()
+        files_paths = embedding.query_embedding(message_normalized, config_file["similarity_threshold_value"], top_k=5)
         answer  = self.llm.generate_response(message_normalized, files_paths)
         
         return answer

@@ -1,11 +1,18 @@
+import os
+from .llama_llm import LlamaLLM
+from repository.configuration_file import ConfigurationFile
 import services.embeddings_lib as embedding
 
 from model.abstract_model_session import AbstractModelSession
 
-class HFSession(AbstractModelSession):
+class SessionSemanticSearch(AbstractModelSession):
+    """
+    Session class that extends AbstractSession for managing a chat session.
+    """
     
     def __init__(self):
         super().__init__()
+        self.llm = LlamaLLM()
         self.messages = []
         
     def start_session(self):
@@ -13,7 +20,6 @@ class HFSession(AbstractModelSession):
         Start a new session.
         """
         self.session_available = True
-        print("Session started.")
     
     def generate_response(self, message):
         """
@@ -22,11 +28,20 @@ class HFSession(AbstractModelSession):
         :param message: The message to be sent.
         :return: The response from the LLM.
         """
-        top_k = 5
+        top_k = 10
         self.messages.append(message)
-        answer = embedding.query_embedding(message, top_k)
+        message_normalized = self.llm.query_normalizer(message)
+        config_file_repo = ConfigurationFile()
+        config_file = config_file_repo.load_config_file()
+        files_paths = embedding.query_embedding(message_normalized, config_file["similarity_threshold_value"], top_k=top_k)
+        if not files_paths:
+            response_text = "No se encontraron documentos relevantes. Prueba a bajar el nivel de similitud en la confoguración."
+            self.messages.append(response_text)
+            return response_text
         response_text = "Los documentos más similares son:\n"
-        response_text += "\n".join(f"- {doc}" for doc in answer)
+        for file_path in files_paths:
+            _, filename = os.path.split(file_path)
+            response_text += f"- <b>{filename}</b> <i>({file_path})</i>\n"
 
         self.messages.append(response_text)
 
@@ -46,6 +61,4 @@ class HFSession(AbstractModelSession):
         """
         self.messages = []
         self.session_available = False
-        print("Session ended.")
-        print("Resources cleared.")
     

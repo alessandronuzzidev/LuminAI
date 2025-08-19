@@ -1,6 +1,5 @@
-from model.mxbai_embedding import MxbaiEmbedding
+from collections import defaultdict
 from model.nomic_embedding import NomicEmbedding
-from model.paraphrase_multilingual_MiniLM_L12_v2 import ParaphraseMultilingualMiniLM
 from repository.chroma_repository import ChromaRepository
 
 import json
@@ -36,7 +35,7 @@ def save_documents(document, metadata):
     repository = get_repository()
     repository.add(page_content=document, metadata=metadata)
 
-def query_embedding(query, top_k):
+def query_embedding(query, threshold=0.7, top_k=None):
     """
     Embeds a query and returns its embedding.
     
@@ -44,22 +43,23 @@ def query_embedding(query, top_k):
     :return: The embedded representation of the query.
     """
     repository = get_repository()
-    results = repository.query(query=query, top_k=top_k)
 
-    output = []
+    retriever = repository.as_retriever(score_threshold=threshold, top_k=top_k)
+    
+    results = retriever.get_relevant_documents(query)
+
+    output = set()
     for doc in results:
         if hasattr(doc, "metadata") and "path" in doc.metadata:
-            output.append(doc.metadata["path"])
+            output.add(doc.metadata["path"])
         else:
-            output.append("Ruta no disponible")
+            output.add("Ruta no disponible")
 
-    return output
+    return list(output)
 
 def create_database():
     embedding_models = {
-        "mxbai-embed-large-v1": MxbaiEmbedding,
-        "nomic-embed-text-v1.5": NomicEmbedding,
-        "paraphrase-multilingual-minilm:l12-v2": ParaphraseMultilingualMiniLM
+        "nomic-embed-text": NomicEmbedding,
     }
     
     with open("data/config.json", "r", encoding="utf-8") as f:

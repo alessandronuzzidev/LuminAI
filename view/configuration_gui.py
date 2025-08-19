@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
-    QPushButton, QLabel, QLineEdit, QFrame, QFileDialog, QCheckBox, 
-    QMessageBox, QRadioButton, QButtonGroup, QProgressDialog
+    QPushButton, QLabel, QLineEdit, QFileDialog, QCheckBox, 
+    QMessageBox, QProgressDialog, QSlider, QDoubleSpinBox, QSpacerItem, QSizePolicy
 )
 
 from PySide6.QtCore import Qt, QSize, QThread
@@ -86,21 +86,20 @@ class ConfigurationUI(QWidget):
 
             self.controller.thread_function(update_function=self.update_progress, progress_dialog=self.progress_dialog)
         else:
-            print("Same dir!!!")
-
+            QMessageBox.information(self, "Información", "La ruta no ha cambiado. No es necesario recargar los documentos.")
             
     def add_path_input(self, content_layout):
         title = QLabel("Configuración de ruta de documentos")
         title.setStyleSheet(self.title_style())
-        content_layout.addWidget(title)
         
         padded_container = QWidget()
         padded_layout = QVBoxLayout()
-        padded_layout.setContentsMargins(10, 0, 10, 0)
+        padded_layout.setContentsMargins(10, 10, 10, 10)
         padded_container.setLayout(padded_layout)
+        padded_layout.addWidget(title)
 
         path_info = QLabel("Especifica la carpeta donde se encuentran los documentos que deseas consultar.")
-        path_info.setStyleSheet(self.text_style())
+        path_info.setStyleSheet(self.info_style())
         path_info.setWordWrap(True)
         padded_layout.addWidget(path_info)
 
@@ -131,36 +130,73 @@ class ConfigurationUI(QWidget):
         content_layout.addWidget(padded_container)
 
 
-    def add_radio_option_list(self, content_layout):
-        title = QLabel("Configuración de interacción con el sistema")
-        title.setStyleSheet(self.title_style())
-        content_layout.addWidget(title)
-        
-        model_info = QLabel("Seleccione cómo gestionar el contenido de los documentos. (Recuerde que cambiar este ajuste conllevará recalcular los embeddings.)")
-        content_layout.addWidget(model_info)
-
+    def add_search_options(self, content_layout):
         padded_container = QWidget()
         padded_layout = QVBoxLayout()
-        padded_layout.setContentsMargins(10, 0, 10, 0)
+        padded_layout.setContentsMargins(10, 10, 10, 10)
         padded_container.setLayout(padded_layout)
 
-        self.radio_text = QRadioButton("    Generar embeddings con el documento completo.")
-        self.radio_llm = QRadioButton("    Utilizar LLM Llama3.2 para utilizar embeddings de un resumen del documento.")
-        self.radio_entities = QRadioButton("    Extraer entidades más importantes del texto y utilizarlas para generar los embeddings.")
+        title_rag = QLabel("Configuración de interacción con el sistema (RAG)")
+        title_rag.setStyleSheet(self.title_style())
+        padded_layout.addWidget(title_rag)
 
-        for radio in [self.radio_text, self.radio_llm, self.radio_entities]:
-            radio.setCursor(Qt.PointingHandCursor)
-            radio.setStyleSheet(self.text_style())
-            padded_layout.addWidget(radio)
+        info_rag = QLabel(
+            "Utilizar RAG (Retrieval-Augmented Generation) permite al modelo acceder a documentos relevantes "
+            "durante la generación de respuestas. Si se desactiva, el modelo generará respuestas con los nombres "
+            "de los documentos."
+        )
+        info_rag.setStyleSheet(self.info_style())
+        info_rag.setWordWrap(True)
+        padded_layout.addWidget(info_rag)
 
-        self.interaction_group = QButtonGroup()
-        self.interaction_group.addButton(self.radio_text)
-        self.interaction_group.addButton(self.radio_llm)
-        self.interaction_group.addButton(self.radio_entities)
+        self.checkbox_rag = QCheckBox("Usar RAG para generar la respuesta.")
+        self.checkbox_rag.setCursor(Qt.PointingHandCursor)
+        self.checkbox_rag.setStyleSheet(self.text_style())
+        self.checkbox_rag.setChecked(self.old_config["checkbox_rag_value"])
+        padded_layout.addWidget(self.checkbox_rag)
 
-        self.radio_text.setChecked(self.old_config["all_doc"])
-        self.radio_llm.setChecked(self.old_config["summarize"])
-        self.radio_entities.setChecked(self.old_config["most_important_entities"])
+        padded_layout.addSpacing(20)
+
+        title_similarity = QLabel("Configuración de interacción con el sistema (Similitud)")
+        title_similarity.setStyleSheet(self.title_style())
+        padded_layout.addWidget(title_similarity)
+
+        info_threshold = QLabel(
+            "Nivel de similitud mínimo (0.0 a 1.0). Este umbral determina qué tan similares deben ser los documentos "
+            "para ser considerados relevantes. Un valor más alto significa que solo se considerarán documentos muy "
+            "similares. Un valor más bajo permitirá que se muestren documentos menos similares. El valor por defecto "
+            "es 0.7, lo que significa que se considerarán documentos con un 70% de similitud o más."
+        )
+        info_threshold.setStyleSheet(self.info_style())
+        info_threshold.setWordWrap(True)
+        padded_layout.addWidget(info_threshold)
+
+        threshold_container = QWidget()
+        threshold_layout = QHBoxLayout()
+        threshold_layout.setContentsMargins(0, 0, 0, 0)
+        threshold_container.setLayout(threshold_layout)
+
+        self.slider_threshold = QSlider(Qt.Horizontal)
+        self.slider_threshold.setRange(0, 100)
+        self.slider_threshold.setValue(int(self.old_config.get("similarity_threshold", self.old_config["similarity_threshold_value"]) * 100))
+
+        self.spinbox_threshold = QDoubleSpinBox()
+        self.spinbox_threshold.setRange(0.0, 1.0)
+        self.spinbox_threshold.setSingleStep(0.01)
+        self.spinbox_threshold.setValue(self.old_config.get("similarity_threshold", self.old_config["similarity_threshold_value"]))
+
+        self.slider_threshold.valueChanged.connect(
+            lambda val: self.spinbox_threshold.setValue(val / 100.0)
+        )
+        self.spinbox_threshold.valueChanged.connect(
+            lambda val: self.slider_threshold.setValue(int(val * 100))
+        )
+
+        threshold_layout.addWidget(self.slider_threshold)
+        threshold_layout.addWidget(self.spinbox_threshold)
+        padded_layout.addWidget(threshold_container)
+
+        padded_layout.addSpacing(10)
 
         content_layout.addWidget(padded_container)
 
@@ -191,15 +227,10 @@ class ConfigurationUI(QWidget):
     
     def save_configuration(self):
         path = self.path_input.text()
-        embedding_model = self.selected_model["name"]
-        
-        content_management = {
-            "all_doc": self.radio_text.isChecked(),
-            "summarize": self.radio_llm.isChecked(),
-            "most_important_entities": self.radio_entities.isChecked()
-        }
+        checkbox_rag_value = self.checkbox_rag.isChecked()
+        similarity_threshold_value = self.spinbox_threshold.value()
 
-        recharge = self.controller.update_config_document(path, content_management, embedding_model)
+        recharge = self.controller.update_config_document(path, checkbox_rag_value, similarity_threshold_value)
         if recharge:
             self.progress_dialog = QProgressDialog("Indexando archivos...", "Cancelar", 0, 0, self)
             self.progress_dialog.setWindowTitle("Indexando")
@@ -209,95 +240,18 @@ class ConfigurationUI(QWidget):
             self.progress_dialog.show()
             
             self.controller.thread_function(self.update_progress, self.progress_dialog)
-
-    def add_models(self, content_layout):
-        title = QLabel("Selección de modelos de embeddings")
-        title.setStyleSheet(self.title_style())
-        content_layout.addWidget(title)
-
-        padded_container = QWidget()
-        padded_layout = QVBoxLayout()
-        padded_layout.setContentsMargins(10, 0, 10, 0)
-        padded_container.setLayout(padded_layout)
-
-        model_info = QLabel("Elige el modelo de embedding a utilizar para gestionar la información de los documentos. (Recuerde que cambiar el modelo conlleva recalcular los embeddings.)")
-        model_info.setStyleSheet(self.text_style())
-        model_info.setWordWrap(True)
-        padded_layout.addWidget(model_info)
-
-        models_container = QWidget()
-        models_layout = QHBoxLayout()
-        models_layout.setContentsMargins(0, 0, 0, 0)
-        models_layout.setSpacing(20)
-        models_container.setLayout(models_layout)
-        padded_layout.addWidget(models_container)
-
-        self.model_buttons = []
-        self.selected_model_index = None
-        self.models_data = self.controller.load_embedding_models_file()
-
-        for idx, model in enumerate(self.models_data):
-            model_card = QFrame()
-            model_card.setFrameShape(QFrame.StyledPanel)
-            model_card.setStyleSheet(self.frame_style())
-
-            model_layout = QVBoxLayout(model_card)
-            model_layout.setContentsMargins(20, 20, 20, 20)
-            model_layout.setSpacing(10)
-
-            model_name = QLabel(f"Modelo: {model.get('name', 'Desconocido')}")
-            model_name.setStyleSheet("font-size: 16px; font-weight: bold;")
-            model_layout.addWidget(model_name)
-
-            specs_text = (
-                f"• Tamaño: {model.get('size', 'N/A')}\n"
-                f"• Contexto: {model.get('context', 'N/A')}\n"
-                f"• Lenguaje: {model.get('language', 'N/A')}"
-            )
-
-            specs = QLabel(specs_text)
-            specs.setStyleSheet("font-size: 14px;")
-            specs.setWordWrap(True)
-            model_layout.addWidget(specs)
-
-            if self.old_config["embedding_model"] == model["name"]:
-                select_text = "Seleccionado"
-                select_style = self.model_selected_style()
-                self.selected_model = model
-                self.selected_model_index = idx
-            else:
-                select_text = "Seleccionar"
-                select_style = self.model_not_selected_style()
-            select_button = QPushButton(select_text)
-            select_button.setCursor(Qt.PointingHandCursor)
-            select_button.setStyleSheet(select_style)
-
-            def make_on_click(i):
-                def on_click():
-                    self.update_model_selection(i)
-                return on_click
-
-            select_button.clicked.connect(make_on_click(idx))
-            self.model_buttons.append(select_button)
-            model_layout.addWidget(select_button)
-
-            models_layout.addWidget(model_card)
-
-        content_layout.addWidget(padded_container)
     
     def create_content_area(self):
         content_layout = QVBoxLayout()
         content_layout.setContentsMargins(20, 20, 20, 20)
         content_layout.setSpacing(20)
-        content_layout.setAlignment(Qt.AlignTop) 
+        content_layout.setAlignment(Qt.AlignTop)
 
         self.add_path_input(content_layout)
-        self.add_radio_option_list(content_layout)
-        self.add_models(content_layout)
+        self.add_search_options(content_layout)
 
-        content_widget = QWidget()
-        content_widget.setLayout(content_layout)
-        
+        content_layout.addItem(QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding))
+
         save_button = QPushButton("Guardar configuración")
         save_button.setFixedSize(220, 40)
         save_button.setStyleSheet(self.init_charge_button_style())
@@ -307,12 +261,17 @@ class ConfigurationUI(QWidget):
         button_container = QWidget()
         button_layout = QHBoxLayout()
         button_layout.setAlignment(Qt.AlignCenter)
+        button_layout.setContentsMargins(0, 0, 0, 20)  # margen inferior de 20px
         button_layout.addWidget(save_button)
         button_container.setLayout(button_layout)
 
         content_layout.addWidget(button_container)
 
+        content_widget = QWidget()
+        content_widget.setLayout(content_layout)
+
         return content_widget
+
     
     # Styles
     def general_style(self):
@@ -350,6 +309,15 @@ class ConfigurationUI(QWidget):
                 font-size: 16px; 
                 font-weight: bold; 
                 color: #7bab8c;
+            }
+        """
+        
+    def info_style(self):
+        return """
+            QLabel {
+                font-size: 14px; 
+                color: #666;
+                margin-bottom: 10px;
             }
         """
         
