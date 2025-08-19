@@ -4,12 +4,13 @@ from PySide6.QtWidgets import (
     QMessageBox, QProgressDialog, QSlider, QDoubleSpinBox, QSpacerItem, QSizePolicy
 )
 
-from PySide6.QtCore import Qt, QSize, QThread, QObject, pyqtSignal
+from PySide6.QtCore import Signal
+from PySide6.QtCore import Qt, QSize, QThread, QObject
 from PySide6.QtGui import QIcon
 
 class FileIndexWorker(QObject):
-    progress = pyqtSignal(int, int)
-    finished = pyqtSignal()
+    progress = Signal(int, int)
+    finished = Signal()
 
     def __init__(self, controller):
         super().__init__()
@@ -76,32 +77,12 @@ class ConfigurationUI(QWidget):
         if folder:
             self.path_input.setText(folder)
             
-    def handle_path_input_gui(self):
+    def handle_path_input(self):
         path = self.path_input.text()
         if path != self.old_config["path"]:
             self.controller.update_path(path)
             self.old_config = self.controller.load_config_file()
-
-            self.progress_dialog = QProgressDialog("Indexando archivos...", "Cancelar", 0, 0, self)
-            self.progress_dialog.setWindowTitle("Indexando")
-            self.progress_dialog.setWindowModality(Qt.ApplicationModal)
-            self.progress_dialog.setMinimumDuration(0)
-            self.progress_dialog.setValue(0)
-            self.progress_dialog.show()
-
-            self.thread = QThread()
-            self.worker = FileIndexWorker(self.controller)
-            self.worker.moveToThread(self.thread)
-
-            self.worker.progress.connect(self.update_progress)
-            self.worker.finished.connect(self.thread.quit)
-            self.worker.finished.connect(self.progress_dialog.close)
-            self.thread.started.connect(self.worker.run)
-            self.thread.finished.connect(self.thread.deleteLater)
-
-            self.thread.start()
-        else:
-            QMessageBox.information(self, "Información", "La ruta no ha cambiado. No es necesario recargar los documentos.")
+            self.start_indexing()
 
     def update_progress(self, current, total):
         if self.progress_dialog:
@@ -231,7 +212,6 @@ class ConfigurationUI(QWidget):
                 button.setStyleSheet(self.model_not_selected_style())
         self.selected_model_index = selected_index
         self.selected_model = self.models_data[selected_index]
-
         
     def show_confirmation_dialog(self):
         dialog = QMessageBox(self)
@@ -245,7 +225,27 @@ class ConfigurationUI(QWidget):
 
         if dialog.clickedButton() == btn_aceptar:
             self.save_configuration()
-    
+            
+    def start_indexing(self):
+        self.progress_dialog = QProgressDialog("Indexando archivos...", "Cancelar", 0, 0, self)
+        self.progress_dialog.setWindowTitle("Indexando")
+        self.progress_dialog.setWindowModality(Qt.ApplicationModal)
+        self.progress_dialog.setMinimumDuration(0)
+        self.progress_dialog.setValue(0)
+        self.progress_dialog.show()
+
+        self.thread = QThread()
+        self.worker = FileIndexWorker(self.controller)
+        self.worker.moveToThread(self.thread)
+
+        self.worker.progress.connect(self.update_progress)
+        self.worker.finished.connect(self.thread.quit)
+        self.worker.finished.connect(self.progress_dialog.close)
+        self.thread.started.connect(self.worker.run)
+        self.thread.finished.connect(self.thread.deleteLater)
+
+        self.thread.start()
+
     def save_configuration(self):
         path = self.path_input.text()
         checkbox_rag_value = self.checkbox_rag.isChecked()
@@ -253,15 +253,8 @@ class ConfigurationUI(QWidget):
 
         recharge = self.controller.update_config_document(path, checkbox_rag_value, similarity_threshold_value)
         if recharge:
-            self.progress_dialog = QProgressDialog("Indexando archivos...", "Cancelar", 0, 0, self)
-            self.progress_dialog.setWindowTitle("Indexando")
-            self.progress_dialog.setWindowModality(Qt.ApplicationModal)
-            self.progress_dialog.setMinimumDuration(0)
-            self.progress_dialog.setValue(0)
-            self.progress_dialog.show()
-            
-            self.controller.thread_function(self.update_progress, self.progress_dialog)
-    
+            self.start_indexing()
+          
     def create_content_area(self):
         content_layout = QVBoxLayout()
         content_layout.setContentsMargins(20, 20, 20, 20)
@@ -282,7 +275,7 @@ class ConfigurationUI(QWidget):
         button_container = QWidget()
         button_layout = QHBoxLayout()
         button_layout.setAlignment(Qt.AlignCenter)
-        button_layout.setContentsMargins(0, 0, 0, 20)  # margen inferior de 20px
+        button_layout.setContentsMargins(0, 0, 0, 20)
         button_layout.addWidget(save_button)
         button_container.setLayout(button_layout)
 
