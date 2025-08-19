@@ -35,7 +35,7 @@ class SessionSemanticSearch(AbstractModelSession):
         config_file = config_file_repo.load_config_file()
         files_paths = embedding.query_embedding(message_normalized, config_file["similarity_threshold_value"], top_k=top_k)
         if not files_paths:
-            response_text = "No se encontraron documentos relevantes. Prueba a bajar el nivel de similitud en la confoguración."
+            response_text = "No se encontraron documentos relevantes. Prueba a bajar el nivel de similitud en la configuración."
             self.messages.append(response_text)
             return response_text
         response_text = "Los documentos más similares son:\n"

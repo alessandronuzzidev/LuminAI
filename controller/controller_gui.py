@@ -100,24 +100,37 @@ class ControllerGUI(AbstractController):
         
         return False
         
-    def thread_function(self, update_function, progress_dialog):
-        self.thread = QThread()
-        self.worker = self.file_indexer()
-        self.worker.moveToThread(self.thread)
-
-        self.worker.progress.connect(update_function)
-        self.worker.finished.connect(self.thread.quit)
-        self.worker.finished.connect(progress_dialog.close)
-        self.thread.started.connect(self.worker.run)
-        self.thread.finished.connect(self.thread.deleteLater)
-
-        self.thread.start()
-        
-    def file_indexer(self):
+    def get_total_documents(self) -> int:
         """
-        Create Worker for subprocess of loading documents to database.
-        
-        :return: The object that extracts the text from different types of documents.
+        Get the total number of documents in the specified path.
+        :return: The total number of documents.
+        """
+        config_file = self.config_file.load_config_file()
+        return len(self.list_documents(config_file["path"]))
+
+    def list_documents(self, path: str):
+        """
+        List all documents in the specified path.
+        :param path: The path to search for documents.
+        :return: A list of document paths.
+        """
+        import os
+        doc_list = []
+        for root, _, files in os.walk(path):
+            for f in files:
+                doc_list.append(os.path.join(root, f))
+        return doc_list
+
+    def index_documents(self, progress_callback=None):
+        """
+        Index all documents in the specified path.
+        :param progress_callback: Optional callback function to update progress.
         """
         text_extractor_service = TextExtractorService()
-        return FileIndexWorker(index_function= text_extractor_service.extract_and_save_text)
+        config_file = self.config_file.load_config_file()
+        docs = self.list_documents(config_file["path"])
+        total = len(docs)
+        for i, doc_path in enumerate(docs, start=1):
+            text_extractor_service.extract_and_save_text(doc_path)
+            if progress_callback:
+                progress_callback(i, total)

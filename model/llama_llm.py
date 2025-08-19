@@ -8,7 +8,10 @@ import os
 class LlamaLLM:
 
     def __init__(self):
-        subprocess.run(["ollama", "pull", "llama3.2"], check=True)
+        subprocess.run(["ollama", "pull", "llama3.2"], 
+                       check=True,
+                       stdout=subprocess.DEVNULL,
+                       stderr=subprocess.DEVNULL)
         self.model = OllamaLLM(model="llama3.2")
         self.messages = [SystemMessage(content="Eres un asistente que ayuda a los usuarios del sistema a encontrar los " +
             "archivos en los que se habla del tema que se le indica. El usuario te dirá el tema " + 

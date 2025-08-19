@@ -46,7 +46,7 @@ def query_embedding(query, threshold=0.7, top_k=None):
 
     retriever = repository.as_retriever(score_threshold=threshold, top_k=top_k)
     
-    results = retriever.get_relevant_documents(query)
+    results = retriever.invoke(query)
 
     output = set()
     for doc in results:

@@ -1,5 +1,6 @@
 from collections import defaultdict
-from langchain_community.vectorstores import Chroma
+
+from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from uuid import uuid4
 from repository.abstract_vector_db_repository import AbstractVectorDBRepository
@@ -44,7 +45,6 @@ class ChromaRepository(AbstractVectorDBRepository):
             texts=chunks,
             metadatas=[metadata] * len(chunks)
         )
-        self.vector_store.persist()
         
         del chunks, page_content, metadata
         gc.collect()
@@ -100,8 +100,5 @@ class ChromaRepository(AbstractVectorDBRepository):
                 search_type="similarity_score_threshold",
                 search_kwargs={'score_threshold': score_threshold, 'k': top_k}
             )
-        vectorstore.as_retriever(
-            search_type="similarity_score_threshold",
-            search_kwargs={'score_threshold': threshold, 'k': 10}
-        )
+
 

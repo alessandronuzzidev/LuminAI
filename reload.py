@@ -21,7 +21,7 @@ class ReloadOnChange(FileSystemEventHandler):
             self.run_script()
 
 if __name__ == "__main__":
-    script = "main.py"
+    script = "main_gui.py"
     event_handler = ReloadOnChange(script)
     observer = Observer()
     observer.schedule(event_handler, ".", recursive=True)

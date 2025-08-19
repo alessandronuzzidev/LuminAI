@@ -4,9 +4,20 @@ from PySide6.QtWidgets import (
     QMessageBox, QProgressDialog, QSlider, QDoubleSpinBox, QSpacerItem, QSizePolicy
 )
 
-from PySide6.QtCore import Qt, QSize, QThread
+from PySide6.QtCore import Qt, QSize, QThread, QObject, pyqtSignal
 from PySide6.QtGui import QIcon
 
+class FileIndexWorker(QObject):
+    progress = pyqtSignal(int, int)
+    finished = pyqtSignal()
+
+    def __init__(self, controller):
+        super().__init__()
+        self.controller = controller
+
+    def run(self):
+        self.controller.index_documents(progress_callback=self.progress.emit)
+        self.finished.emit()
 
 class ConfigurationUI(QWidget):
     def __init__(self, on_chat_click=None, controller=None):
@@ -65,13 +76,7 @@ class ConfigurationUI(QWidget):
         if folder:
             self.path_input.setText(folder)
             
-    def update_progress(self, current, total):
-        if self.progress_dialog:
-            self.progress_dialog.setMaximum(total)
-            self.progress_dialog.setValue(current)
-            self.progress_dialog.setLabelText(f"Indexando archivos...\nDocumentos procesados: {current} / {total}")
-
-    def handle_path_input(self):
+    def handle_path_input_gui(self):
         path = self.path_input.text()
         if path != self.old_config["path"]:
             self.controller.update_path(path)
@@ -84,9 +89,25 @@ class ConfigurationUI(QWidget):
             self.progress_dialog.setValue(0)
             self.progress_dialog.show()
 
-            self.controller.thread_function(update_function=self.update_progress, progress_dialog=self.progress_dialog)
+            self.thread = QThread()
+            self.worker = FileIndexWorker(self.controller)
+            self.worker.moveToThread(self.thread)
+
+            self.worker.progress.connect(self.update_progress)
+            self.worker.finished.connect(self.thread.quit)
+            self.worker.finished.connect(self.progress_dialog.close)
+            self.thread.started.connect(self.worker.run)
+            self.thread.finished.connect(self.thread.deleteLater)
+
+            self.thread.start()
         else:
             QMessageBox.information(self, "Información", "La ruta no ha cambiado. No es necesario recargar los documentos.")
+
+    def update_progress(self, current, total):
+        if self.progress_dialog:
+            self.progress_dialog.setMaximum(total)
+            self.progress_dialog.setValue(current)
+            self.progress_dialog.setLabelText(f"Indexando archivos...\nDocumentos procesados: {current} / {total}")
             
     def add_path_input(self, content_layout):
         title = QLabel("Configuración de ruta de documentos")
