@@ -2,17 +2,20 @@ import os
 import signal
 import time
 import json
+import threading
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
 import services.embeddings_lib as embedding
 from controller.controller import Controller
-from services.file_indexer_worker import FileIndexWorker
+from services.text_extractor_service import TextExtractorService
 
 paused = False
 snapshot = {}
 WATCH_PATH = None
 observer = None
+process_lock = threading.Lock()
+last_mtime = {}
 
 def take_snapshot(path):
     """Return a dict with file paths and modification times."""
@@ -69,21 +72,45 @@ with open(pid_file, "w") as f:
 
 class WatcherHandler(FileSystemEventHandler):
     controller = Controller()
-    
+
+    def handle_event(self, src_path, action):
+        """Process an event safely with lock and debounce."""
+        if action in ("modified", "created"):
+            try:
+                mtime = os.path.getmtime(src_path)
+            except FileNotFoundError:
+                return
+
+            if last_mtime.get(src_path) == mtime:
+                return
+
+            last_mtime[src_path] = mtime
+            print(last_mtime.get(src_path))
+        with process_lock:
+            if action == "modified":
+                print(f"File modified: {src_path}")
+                embedding.delete_by_file_path(src_path)
+                TextExtractorService().extract_and_save_text(src_path)
+                print(f"File update indexed: {src_path}")
+            elif action == "created":
+                print(f"File created: {src_path}")
+                TextExtractorService().extract_and_save_text(src_path)
+                print(f"File indexed: {src_path}")
+            elif action == "deleted":
+                print(f"File deleted: {src_path}")
+                embedding.delete_by_file_path(src_path)
+
     def on_modified(self, event):
         if not event.is_directory and not paused:
-            print(f"File modified: {event.src_path}")
+            self.handle_event(event.src_path, "modified")
 
     def on_created(self, event):
         if not event.is_directory and not paused:
-            print(f"File created: {event.src_path}")
-            worker = FileIndexWorker(self.controller)
-            worker.run()
-            print(f"File indexed: {event.src_path}")
+            self.handle_event(event.src_path, "created")
 
     def on_deleted(self, event):
         if not event.is_directory and not paused:
-            print(f"File deleted: {event.src_path}")
+            self.handle_event(event.src_path, "deleted")
 
 def load_watch_path():
     with open("data/config.json", "r") as f:

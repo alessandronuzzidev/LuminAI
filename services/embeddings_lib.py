@@ -4,6 +4,8 @@ from repository.chroma_repository import ChromaRepository
 
 import json
 
+from repository.sqlite_repository import SQLiteRepository
+
 
 
 _vector_repository = None
@@ -33,7 +35,28 @@ def save_documents(document, metadata):
     if not isinstance(document, str):
         raise TypeError("El documento debe ser cadena de texto.")
     repository = get_repository()
-    repository.add(page_content=document, metadata=metadata)
+    ids = repository.add(page_content=document, metadata=metadata)
+    
+    sqlite_repo = SQLiteRepository()
+    sqlite_repo.insert_index(metadata["path"], ids)
+    sqlite_repo.close()
+    
+def delete_by_file_path(file_path):
+    """
+    Deletes all vectors associated with a specific file path.
+    
+    :param file_path: The path of the file whose vectors are to be deleted.
+    """
+    repository = get_repository()
+    if repository is None:
+        return []
+    
+    sqlite_repo = SQLiteRepository()
+    ids = sqlite_repo.delete_by_file_path(file_path)
+    sqlite_repo.close()
+    
+    for vector_id in ids:
+        repository.delete(vector_id)
 
 def query_embedding(query, threshold=0.7, top_k=None):
     """
@@ -80,5 +103,8 @@ def restart():
     repository = get_repository()
     if repository != None:
         repository.restart()
+        sqlite_repo = SQLiteRepository()
+        sqlite_repo.delete_all()
+        sqlite_repo.close()
         
         

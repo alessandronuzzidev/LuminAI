@@ -43,10 +43,12 @@ class TextExtractorService:
         doc = self.extract_text(path_str)
         metadata = {}
         
-        for k, v in doc.items():
-            if k != "content":
-                metadata[k] = v
-                
-        metadata["path"] = path_str
-        
-        embedding.save_documents(doc["content"], metadata)
+        if doc.items():
+            for k, v in doc.items():
+                if k != "content":
+                    metadata[k] = v
+                    
+            metadata["path"] = path_str
+
+            if doc["content"] != "":
+                embedding.save_documents(doc["content"], metadata)

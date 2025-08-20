@@ -9,7 +9,22 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 import gc
 
 import os
-import shutil
+
+class ChromaIdGenerator:
+    def __init__(self, file_path="data/id_counter.txt"):
+        self.file_path = file_path
+        if not os.path.exists(file_path):
+            with open(file_path, "w") as f:
+                f.write("0")
+
+    def next_id(self):
+        with open(self.file_path, "r+") as f:
+            last_id = int(f.read())
+            new_id = last_id + 1
+            f.seek(0)
+            f.write(str(new_id))
+            f.truncate()
+        return str(new_id)
 
 class ChromaRepository(AbstractVectorDBRepository):
     _instance = None 
@@ -32,6 +47,7 @@ class ChromaRepository(AbstractVectorDBRepository):
             collection_name=collection_name
         )
         self._initialized = True
+        self.id_generator = ChromaIdGenerator()
 
     def add(self, page_content, metadata=None):
         text_splitter = RecursiveCharacterTextSplitter(
@@ -40,14 +56,17 @@ class ChromaRepository(AbstractVectorDBRepository):
         )
         
         chunks = text_splitter.split_text(page_content)
+        ids = [self.id_generator.next_id() for _ in chunks]
         
         self.vector_store.add_texts(
             texts=chunks,
-            metadatas=[metadata] * len(chunks)
+            metadatas=[metadata] * len(chunks),
+            ids=ids
         )
         
         del chunks, page_content, metadata
         gc.collect()
+        return ids
         
     def query(self, query, top_k=10, filter=None):
         docs = self.vector_store.similarity_search_with_score(
@@ -70,8 +89,12 @@ class ChromaRepository(AbstractVectorDBRepository):
         
         return results
         
-    def delete(self, vector_id):
-        print("Delete no implementado en esta versión de Chroma.")
+    def delete(self, ids):
+        """
+        Deletes a vector from the database by its ID.
+        :param ids: The ID of the vector to delete.
+        """
+        self.vector_store.delete(ids=[ids])
         
     def restart(self):
         """
