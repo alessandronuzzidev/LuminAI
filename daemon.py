@@ -1,3 +1,6 @@
+import queue
+import threading
+
 import os
 import signal
 import time
@@ -10,12 +13,15 @@ import services.embeddings_lib as embedding
 from controller.controller import Controller
 from services.text_extractor_service import TextExtractorService
 
-paused = False
-snapshot = {}
-WATCH_PATH = None
-observer = None
-process_lock = threading.Lock()
-last_mtime = {}
+def load_watch_path():
+    with open("data/config.json", "r") as f:
+        config = json.load(f)
+    return config["path"]
+
+def save_pid(file_path):
+    pid_file = file_path
+    with open(pid_file, "w") as f:
+        f.write(str(os.getpid()))
 
 def take_snapshot(path):
     """Return a dict with file paths and modification times."""
@@ -60,21 +66,34 @@ def resume(sig, frame):
     print("Monitor resumed")
     compare_snapshots(snapshot, new_snapshot)
     snapshot = {}
+    
+def worker():
+    """Consume events from the queue in order."""
+    while True:
+        process = event_queue.get()
+        with process_lock:
+            if process["action"] == "modified":
+                print(f"File modified: {process['src_path']}")
+                embedding.delete_by_file_path(process['src_path'])
+                TextExtractorService().extract_and_save_text(process['src_path'])
+                print(f"File update indexed: {process['src_path']}")
+            elif process["action"] == "created":
+                print(f"File created: {process['src_path']}")
+                TextExtractorService().extract_and_save_text(process['src_path'])
+                print(f"File indexed: {process['src_path']}")
+            elif process["action"] == "deleted":
+                print(f"File deleted: {process['src_path']}")
+                embedding.delete_by_file_path(process['src_path'])
+        event_queue.task_done()
 
-# Register signals
-signal.signal(signal.SIGUSR1, pause)
-signal.signal(signal.SIGUSR2, resume)
-
-# Save PID to a file
-pid_file = "data/monitor.pid"
-with open(pid_file, "w") as f:
-    f.write(str(os.getpid()))
-
+    
 class WatcherHandler(FileSystemEventHandler):
     controller = Controller()
-
+    events_dict = dict()
+    
+    
     def handle_event(self, src_path, action):
-        """Process an event safely with lock and debounce."""
+        """Enqueue event instead of processing immediately."""
         if action in ("modified", "created"):
             try:
                 mtime = os.path.getmtime(src_path)
@@ -85,21 +104,15 @@ class WatcherHandler(FileSystemEventHandler):
                 return
 
             last_mtime[src_path] = mtime
-            print(last_mtime.get(src_path))
-        with process_lock:
-            if action == "modified":
-                print(f"File modified: {src_path}")
-                embedding.delete_by_file_path(src_path)
-                TextExtractorService().extract_and_save_text(src_path)
-                print(f"File update indexed: {src_path}")
-            elif action == "created":
-                print(f"File created: {src_path}")
-                TextExtractorService().extract_and_save_text(src_path)
-                print(f"File indexed: {src_path}")
-            elif action == "deleted":
-                print(f"File deleted: {src_path}")
-                embedding.delete_by_file_path(src_path)
-
+        
+        object_to_register = {"src_path": src_path, "action": action}
+        event_queue.put(object_to_register)
+        
+        # Enviar la cola de tareas si está levantado LuminAI
+        with open("data/event_queue.json", "w") as f:
+            json.dump(list(event_queue.queue), f)   
+        
+    
     def on_modified(self, event):
         if not event.is_directory and not paused:
             self.handle_event(event.src_path, "modified")
@@ -112,13 +125,6 @@ class WatcherHandler(FileSystemEventHandler):
         if not event.is_directory and not paused:
             self.handle_event(event.src_path, "deleted")
 
-def load_watch_path():
-    with open("data/config.json", "r") as f:
-        config = json.load(f)
-    return config["path"]
-
-event_handler = WatcherHandler()
-
 def start_observer(path):
     global observer
     if observer:
@@ -128,6 +134,24 @@ def start_observer(path):
     observer.schedule(event_handler, path, recursive=True)
     observer.start()
     print(f"Monitoring path: {path}")
+            
+WATCH_PATH = None
+paused = False
+snapshot = {}
+observer = None
+last_mtime = {}
+process_lock = threading.Lock()
+event_queue = queue.Queue()
+
+threading.Thread(target=worker, daemon=True).start()
+
+signal.signal(signal.SIGUSR1, pause)
+signal.signal(signal.SIGUSR2, resume)
+
+pid_file = "data/monitor.pid"
+save_pid(pid_file)
+            
+event_handler = WatcherHandler()
 
 WATCH_PATH = load_watch_path()
 start_observer(WATCH_PATH)
