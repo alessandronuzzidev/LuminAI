@@ -18,7 +18,8 @@ pip install blobfile
 pip install accelerate
 pip install langchain sentence-transformers
 pip install -U langchain-huggingface
-pip install -qU langchain-community faiss-cpu
+pip install watchdog
+
 
 
 # Librerias para procesameinto de ficheros

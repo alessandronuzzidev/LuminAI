@@ -6,9 +6,10 @@ from rich.text import Text
 from rich.progress import Progress, BarColumn, TextColumn
 import threading
 
-from controller.controller_gui import ControllerGUI
+from controller.controller import Controller
 
 import services.embeddings_lib as embeddings
+from services.control_monitor_lib import control_monitor
 
 class LuminAICommand(Cmd):
     intro = 'Welcome to LuminAI. Type help or ? to list commands.\n'
@@ -17,7 +18,8 @@ class LuminAICommand(Cmd):
     def __init__(self):
         super().__init__()
         self.console = Console()
-        self.controller = ControllerGUI()
+        self.controller = Controller()
+        control_monitor("pause")
         
     def default(self, line):
         """Override unknown command handler"""
@@ -27,6 +29,7 @@ class LuminAICommand(Cmd):
     def do_exit(self, arg):
         """Exit the LuminAI CLI."""
         print('Exiting LuminAI CLI.')
+        control_monitor("resume")
         return True
 
     def do_help(self, arg):

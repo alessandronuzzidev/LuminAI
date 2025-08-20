@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QStackedWidget
-from controller.controller_gui import ControllerGUI
+from controller.controller import Controller
 from view.chat_gui import ChatUI
 from view.configuration_gui import ConfigurationUI
 
@@ -9,7 +9,7 @@ class App_GUI(QWidget):
         super().__init__()
         self.setWindowTitle("LuminAI")
         self.stacked_widget = QStackedWidget()
-        self.controller = ControllerGUI()
+        self.controller = Controller()
 
         self.chat = ChatUI(self.go_to_configuration_screen, self.controller)
         self.configuration = ConfigurationUI(self.go_to_chat_screen, self.controller)

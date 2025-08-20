@@ -8,17 +8,7 @@ from PySide6.QtCore import Signal
 from PySide6.QtCore import Qt, QSize, QThread, QObject
 from PySide6.QtGui import QIcon
 
-class FileIndexWorker(QObject):
-    progress = Signal(int, int)
-    finished = Signal()
-
-    def __init__(self, controller):
-        super().__init__()
-        self.controller = controller
-
-    def run(self):
-        self.controller.index_documents(progress_callback=self.progress.emit)
-        self.finished.emit()
+from services.file_indexer_worker import FileIndexWorker
 
 class ConfigurationUI(QWidget):
     def __init__(self, on_chat_click=None, controller=None):

@@ -1,7 +1,7 @@
 {
     "path": "/Users/alessandronuzziherrero/LuminAI/LuminAI/dataset/films",
     "checkbox_rag_value": false,
-    "similarity_threshold_value": 0.25,
+    "similarity_threshold_value": 0.51,
     "embedding_model": "nomic-embed-text",
     "llm_model": "llama3.2"
 }

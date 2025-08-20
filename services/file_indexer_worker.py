@@ -3,8 +3,19 @@ from PySide6.QtCore import QObject, Signal, QThread
 import json
 import os
 
-
 class FileIndexWorker(QObject):
+    progress = Signal(int, int)
+    finished = Signal()
+
+    def __init__(self, controller):
+        super().__init__()
+        self.controller = controller
+
+    def run(self):
+        self.controller.index_documents(progress_callback=self.progress.emit)
+        self.finished.emit()
+
+"""class FileIndexWorker(QObject):
     progress = Signal(int, int) 
     finished = Signal()
 
@@ -14,9 +25,9 @@ class FileIndexWorker(QObject):
         self.index_function = index_function
 
     def run(self):
-        """
-        Function that loads the doc content to the system.
-        """
+
+        #Function that loads the doc content to the system.
+
         with open(self.json_path, 'r', encoding='utf-8') as f:
             self.config = json.load(f)
         
@@ -35,4 +46,5 @@ class FileIndexWorker(QObject):
             self.index_function(file_path)
             self.progress.emit(i, total)
         
-        self.finished.emit()
+        self.finished.emit()"""
+        

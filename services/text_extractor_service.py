@@ -33,6 +33,9 @@ class TextExtractorService:
         file = os.path.basename(path_str)
         path = Path(path_str)
         suffix = path.suffix
+        if suffix not in self.loaders.keys():
+            return
+        
         doc = self.loaders[suffix].load(folder, file)
         return doc
     

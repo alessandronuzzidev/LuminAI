@@ -7,11 +7,10 @@ from repository.configuration_file import ConfigurationFile
 from repository.embedding_models_file import EmbeddingModelsFile
 
 import services.embeddings_lib as embedding
-from services.file_indexer_worker import FileIndexWorker
 from services.text_extractor_service import TextExtractorService
 
 
-class ControllerGUI(AbstractController):
+class Controller(AbstractController):
     def __init__(self):
         super().__init__()
         self.sessions_dict = {
