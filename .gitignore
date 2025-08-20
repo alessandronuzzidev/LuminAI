@@ -8,3 +8,5 @@ dataset/**/**
 chroma_db/**
 hf_models/**
 sqlite/**
+data/id_counter.txt
+data/monitor.pid
