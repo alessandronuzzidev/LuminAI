@@ -44,6 +44,7 @@ class SQLiteRepository:
     def delete_all(self):
         with self.connection:
             self.connection.execute("DELETE FROM file_index")
+            self.connection.execute("DELETE FROM sqlite_sequence WHERE name='file_index'")
             self.connection.commit()
 
     def close(self):

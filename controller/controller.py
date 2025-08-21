@@ -6,8 +6,7 @@ from model.session_semantic_search import SessionSemanticSearch
 from repository.configuration_file import ConfigurationFile
 from repository.embedding_models_file import EmbeddingModelsFile
 
-import services.embeddings_lib as embedding
-from services.text_extractor_service import TextExtractorService
+import socket, json
 
 
 class Controller(AbstractController):
@@ -94,7 +93,6 @@ class Controller(AbstractController):
                 self.session.start_session()      
         
         if path != "" and old_config["path"] != new_config["path"]:
-            embedding.restart()
             return True
         
         return False
@@ -120,16 +118,50 @@ class Controller(AbstractController):
                 doc_list.append(os.path.join(root, f))
         return doc_list
 
-    def index_documents(self, progress_callback=None):
+    def index_documents(self):
         """
         Index all documents in the specified path.
         :param progress_callback: Optional callback function to update progress.
         """
-        text_extractor_service = TextExtractorService()
         config_file = self.config_file.load_config_file()
         docs = self.list_documents(config_file["path"])
         total = len(docs)
+        
         for i, doc_path in enumerate(docs, start=1):
-            text_extractor_service.extract_and_save_text(doc_path)
-            if progress_callback:
-                progress_callback(i, total)
+            task = {
+                "src_path": doc_path,
+                "action": "created"
+            }
+            with socket.socket() as s:
+                s.connect(("127.0.0.1", 65432))
+                s.send(json.dumps(task).encode())
+                response = s.recv(1024)
+        return 
+    
+    def cancel_indexing(self):
+        """
+        Cancel the indexing process.
+        """
+        s = socket.socket()
+        s.connect(("127.0.0.1", 65432))
+        task = {"cancel": True,}
+        s.send(json.dumps(task).encode())
+        response = s.recv(1024)
+        s.close()
+        
+    def get_progress(self):
+        """
+        Get the progress of the indexing process.
+        :return: A tuple containing the number of completed tasks and the total number of tasks.
+        """
+        s = socket.socket()
+        s.connect(("127.0.0.1", 65432))
+        task = {"progress": True,}
+        s.send(json.dumps(task).encode())
+        response = s.recv(1024)
+        s.close()
+        data = json.loads(response.decode())
+        
+        if "completed" in data and "total" in data:
+            return data["completed"], data["total"]
+        return None, None

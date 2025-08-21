@@ -1,6 +1,3 @@
-import queue
-import threading
-
 import os
 import signal
 import time
@@ -8,10 +5,8 @@ import json
 import threading
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-
-import services.embeddings_lib as embedding
-from controller.controller import Controller
-from services.text_extractor_service import TextExtractorService
+import socket
+import json
 
 def load_watch_path():
     with open("data/config.json", "r") as f:
@@ -66,31 +61,9 @@ def resume(sig, frame):
     print("Monitor resumed")
     compare_snapshots(snapshot, new_snapshot)
     snapshot = {}
-    
-def worker():
-    """Consume events from the queue in order."""
-    while True:
-        process = event_queue.get()
-        with process_lock:
-            if process["action"] == "modified":
-                print(f"File modified: {process['src_path']}")
-                embedding.delete_by_file_path(process['src_path'])
-                TextExtractorService().extract_and_save_text(process['src_path'])
-                print(f"File update indexed: {process['src_path']}")
-            elif process["action"] == "created":
-                print(f"File created: {process['src_path']}")
-                TextExtractorService().extract_and_save_text(process['src_path'])
-                print(f"File indexed: {process['src_path']}")
-            elif process["action"] == "deleted":
-                print(f"File deleted: {process['src_path']}")
-                embedding.delete_by_file_path(process['src_path'])
-        event_queue.task_done()
 
-    
+
 class WatcherHandler(FileSystemEventHandler):
-    controller = Controller()
-    events_dict = dict()
-    
     
     def handle_event(self, src_path, action):
         """Enqueue event instead of processing immediately."""
@@ -105,13 +78,13 @@ class WatcherHandler(FileSystemEventHandler):
 
             last_mtime[src_path] = mtime
         
-        object_to_register = {"src_path": src_path, "action": action}
-        event_queue.put(object_to_register)
-        
-        # Enviar la cola de tareas si está levantado LuminAI
-        with open("data/event_queue.json", "w") as f:
-            json.dump(list(event_queue.queue), f)   
-        
+        task = {"src_path": src_path, "action": action}
+
+        s = socket.socket()
+        s.connect(("127.0.0.1", 65432))
+        s.send(json.dumps(task).encode())
+        response = s.recv(1024)
+        s.close()
     
     def on_modified(self, event):
         if not event.is_directory and not paused:
@@ -140,10 +113,6 @@ paused = False
 snapshot = {}
 observer = None
 last_mtime = {}
-process_lock = threading.Lock()
-event_queue = queue.Queue()
-
-threading.Thread(target=worker, daemon=True).start()
 
 signal.signal(signal.SIGUSR1, pause)
 signal.signal(signal.SIGUSR2, resume)
@@ -157,13 +126,10 @@ WATCH_PATH = load_watch_path()
 start_observer(WATCH_PATH)
 
 try:
-    embedding.create_database()
     while True:
         if not paused and observer is not None and observer.is_alive():
             current_path = load_watch_path()
             if current_path != WATCH_PATH:
-                print(f"Watch path changed: {WATCH_PATH} -> {current_path}")
-                embedding.restart()
                 WATCH_PATH = current_path
                 start_observer(WATCH_PATH)
                 print(f"Watch path updated: {WATCH_PATH}")

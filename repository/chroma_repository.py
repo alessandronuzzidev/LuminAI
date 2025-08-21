@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 from langchain_chroma import Chroma
-from langchain_core.documents import Document
+import chromadb
 from uuid import uuid4
 from repository.abstract_vector_db_repository import AbstractVectorDBRepository
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -13,8 +13,8 @@ import os
 class ChromaIdGenerator:
     def __init__(self, file_path="data/id_counter.txt"):
         self.file_path = file_path
-        if not os.path.exists(file_path):
-            with open(file_path, "w") as f:
+        if not os.path.exists(self.file_path):
+            with open(self.file_path, "w") as f:
                 f.write("0")
 
     def next_id(self):
@@ -25,6 +25,11 @@ class ChromaIdGenerator:
             f.write(str(new_id))
             f.truncate()
         return str(new_id)
+    
+    def reset(self):
+        with open(self.file_path, "w") as f:
+            f.write("0")
+        return "0"
 
 class ChromaRepository(AbstractVectorDBRepository):
     _instance = None 
@@ -36,16 +41,20 @@ class ChromaRepository(AbstractVectorDBRepository):
 
     def __init__(self, embeddings=None, persist_directory="./chroma_db", collection_name="luminai_collection"):
         if hasattr(self, "_initialized") and self._initialized:
-            return  
+            return
 
         self.embeddings = embeddings
         self.collection_name = collection_name
         self.persist_directory = persist_directory
+
+        client = chromadb.PersistentClient(path=persist_directory)
+        collection = client.get_or_create_collection(name="luminai_collec")
         self.vector_store = Chroma(
-            embedding_function=embeddings,
-            persist_directory=persist_directory,
-            collection_name=collection_name
+            client=client,
+            collection_name=collection_name,
+            embedding_function=embeddings
         )
+
         self._initialized = True
         self.id_generator = ChromaIdGenerator()
 
@@ -108,6 +117,8 @@ class ChromaRepository(AbstractVectorDBRepository):
             persist_directory=self.persist_directory,
             collection_name=self.collection_name
         )
+        
+        self.id_generator.reset()
 
     def as_retriever(self, score_threshold=0.7, top_k=5):
         """

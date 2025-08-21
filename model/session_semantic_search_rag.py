@@ -1,6 +1,6 @@
 import subprocess
 import requests
-import services.embeddings_lib as embedding
+import socket, json
 from .llama_llm import LlamaLLM
 from model.abstract_model_session import AbstractModelSession
 from repository.configuration_file import ConfigurationFile
@@ -45,17 +45,44 @@ class SessionSemanticSearchRag(AbstractModelSession):
         
     def generate_response(self, message):
         """
-        Send a message in the current session.
-
-        :param message: The message to be sent.
-        :return: The response from the LLM.
+        Send a message in the current session using a socket.
+        Reads the full response even if es más grande de 1024 bytes (opción C).
         """
+        top_k = 5
         message_normalized = self.llm.query_normalizer(message)
         
         config_file_repo = ConfigurationFile()
         config_file = config_file_repo.load_config_file()
-        files_paths = embedding.query_embedding(message_normalized, config_file["similarity_threshold_value"], top_k=5)
-        answer  = self.llm.generate_response(message_normalized, files_paths)
+        
+        s = socket.socket()
+        s.connect(("127.0.0.1", 65432))
+        
+        task = {
+            "search": True,
+            "message": message_normalized,
+            "similarity_threshold": config_file["similarity_threshold_value"],
+            "top_k": top_k
+        }
+        
+        s.sendall(json.dumps(task).encode())
+
+        buffer = b""
+        while True:
+            chunk = s.recv(1024)
+            if not chunk:
+                break
+            buffer += chunk
+        
+        s.close()
+        
+        try:
+            data = json.loads(buffer.decode())
+        except json.JSONDecodeError:
+            return "Error: la respuesta del servidor no es válida."
+        
+        files_paths = data.get("results", [])
+
+        answer = self.llm.generate_response(message_normalized, files_paths)
         
         return answer
 

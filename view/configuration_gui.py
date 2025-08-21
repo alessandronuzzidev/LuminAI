@@ -4,11 +4,10 @@ from PySide6.QtWidgets import (
     QMessageBox, QProgressDialog, QSlider, QDoubleSpinBox, QSpacerItem, QSizePolicy
 )
 
-from PySide6.QtCore import Signal
-from PySide6.QtCore import Qt, QSize, QThread, QObject
+from PySide6.QtCore import Qt, QSize, QTimer
 from PySide6.QtGui import QIcon
 
-from services.file_indexer_worker import FileIndexWorker
+from task_manager import TaskManager
 
 class ConfigurationUI(QWidget):
     def __init__(self, on_chat_click=None, controller=None):
@@ -74,12 +73,18 @@ class ConfigurationUI(QWidget):
             self.old_config = self.controller.load_config_file()
             self.start_indexing()
 
-    def update_progress(self, current, total):
-        if self.progress_dialog:
-            self.progress_dialog.setMaximum(total)
-            self.progress_dialog.setValue(current)
-            self.progress_dialog.setLabelText(f"Indexando archivos...\nDocumentos procesados: {current} / {total}")
-            
+    def update_progress_from_manager(self):
+        current, total = self.controller.get_progress()
+        if current is None or total is None:
+            return
+        self.progress_dialog.setMaximum(total)
+        self.progress_dialog.setValue(current)
+        self.progress_dialog.setLabelText(f"Indexando archivos...\nDocumentos procesados: {current} / {total}")
+
+        if current >= total:
+            self.progress_timer.stop()
+            self.progress_dialog.close()
+                        
     def add_path_input(self, content_layout):
         title = QLabel("Configuración de ruta de documentos")
         title.setStyleSheet(self.title_style())
@@ -216,6 +221,11 @@ class ConfigurationUI(QWidget):
         if dialog.clickedButton() == btn_aceptar:
             self.save_configuration()
             
+    def cancel_indexing(self):
+        self.controller.cancel_indexing()
+        self.progress_timer.stop()
+        self.progress_dialog.close()
+            
     def start_indexing(self):
         self.progress_dialog = QProgressDialog("Indexando archivos...", "Cancelar", 0, 0, self)
         self.progress_dialog.setWindowTitle("Indexando")
@@ -223,18 +233,11 @@ class ConfigurationUI(QWidget):
         self.progress_dialog.setMinimumDuration(0)
         self.progress_dialog.setValue(0)
         self.progress_dialog.show()
-
-        self.thread = QThread()
-        self.worker = FileIndexWorker(self.controller)
-        self.worker.moveToThread(self.thread)
-
-        self.worker.progress.connect(self.update_progress)
-        self.worker.finished.connect(self.thread.quit)
-        self.worker.finished.connect(self.progress_dialog.close)
-        self.thread.started.connect(self.worker.run)
-        self.thread.finished.connect(self.thread.deleteLater)
-
-        self.thread.start()
+        self.progress_dialog.canceled.connect(self.cancel_indexing)
+        self.progress_timer = QTimer(self)
+        self.progress_timer.timeout.connect(self.update_progress_from_manager)
+        self.progress_timer.start(1000)
+        self.controller.index_documents()       
 
     def save_configuration(self):
         path = self.path_input.text()

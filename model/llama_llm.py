@@ -19,9 +19,7 @@ class LlamaLLM:
             "ningún archivo local, entonces le dirás que no se habla de ese tema en ningún archivo. " +
             "Es necesario que indiques la ruta del archivo especificado en el metadata, en path. " + 
             "Presentalo como bullet points. Debes ser escueto para que seas lo más rápido posible. " +
-            "Por último, no uses markdown, sino HTML. Por ejemplo, si usas ** para negrita, usa <b> en su lugar. " +
-            "Si usas * para cursiva, usa <i> en su lugar. Si usas ` para código, usa <code> en su lugar. " +
-            "Si usas [texto](enlace), usa <a href='enlace'>texto</a> en su lugar. ")]
+            "Por último, no uses markdown, solo texto plano. ")]
         
     def reset(self):
         self.messages = [SystemMessage(content="Eres un asistente que ayuda a los usuarios del sistema a encontrar los " +
@@ -30,9 +28,7 @@ class LlamaLLM:
             "ningún archivo local, entonces le dirás que no se habla de ese tema en ningún archivo. " +
             "Es necesario que indiques la ruta del archivo especificado en el metadata, en path. " + 
             "Presentalo como bullet points. Debes ser escueto para que seas lo más rápido posible. " +
-            "Por último, no uses markdown, sino HTML. Por ejemplo, si usas ** para negrita, usa <b> en su lugar. " +
-            "Si usas * para cursiva, usa <i> en su lugar. Si usas ` para código, usa <code> en su lugar. " +
-            "Si usas [texto](enlace), usa <a href='enlace'>texto</a> en su lugar. ")]
+            "Por último, no uses markdown, solo texto plano. ")]
         
     def send_message(self, message):
         self.messages.append(HumanMessage(content=message))

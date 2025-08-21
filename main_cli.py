@@ -1,14 +1,13 @@
 from cmd import Cmd
+import time
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 from rich.text import Text
 from rich.progress import Progress, BarColumn, TextColumn
-import threading
 
 from controller.controller import Controller
 
-import services.embeddings_lib as embeddings
 from services.control_monitor_lib import control_monitor
 
 class LuminAICommand(Cmd):
@@ -19,6 +18,24 @@ class LuminAICommand(Cmd):
         super().__init__()
         self.console = Console()
         self.controller = Controller()
+        
+        
+        completed, total = self.controller.get_progress()
+        if total > 0 and completed < total:
+            self.console.print("[bold yellow]Indexing in progress detected. Resuming progress...[/bold yellow]")
+            with Progress(
+                "[progress.description]{task.description}",
+                BarColumn(),
+                TextColumn("{task.completed}/{task.total}"),
+                console=self.console
+            ) as progress:
+                progress_task = progress.add_task("Indexing files...", total=total)
+                while completed < total:
+                    completed, total = self.controller.get_progress()
+                    progress.update(progress_task, completed=completed)
+                    time.sleep(1)
+            self.console.print("[bold green]Indexing finished.[/bold green]")
+        self.controller.cancel_indexing()
         control_monitor("pause")
         
     def default(self, line):
@@ -30,6 +47,7 @@ class LuminAICommand(Cmd):
         """Exit the LuminAI CLI."""
         print('Exiting LuminAI CLI.')
         control_monitor("resume")
+        self.controller.cancel_indexing()
         return True
 
     def do_help(self, arg):
@@ -45,7 +63,7 @@ class LuminAICommand(Cmd):
         table.add_row("activate_rag_in_search", "Activate RAG in semantic search.")
         table.add_row("deactivate_rag_in_search", "Deactivate RAG in semantic search.")
         table.add_row("set_similarity_threshold <0-1>", "Set the similarity threshold for semantic search.")
-        table.add_row("restart_chat_interface", "Restart the chat interface.")
+        table.add_row("restart", "Restart the chat interface.")
         table.add_row("search <message>", "Generate a response based on the provided message.")
 
         self.console.print(table)
@@ -67,27 +85,25 @@ class LuminAICommand(Cmd):
 
         self.controller.update_path(path)
         self.console.print(f"Path updated to: [bold green]{path}[/bold green]")
+        
+        self.controller.index_documents()
+        total_docs = self.controller.get_total_documents()
+        with Progress(
+            "[progress.description]{task.description}",
+            BarColumn(),
+            TextColumn("{task.completed}/{task.total}"),
+            console=self.console
+        ) as progress:
+            progress_task = progress.add_task("Indexing files...", total=total_docs)
+            while True:
+                completed, total = self.controller.get_progress()
+                progress.update(progress_task, completed=completed)
+                if completed >= total:
+                    break
+                time.sleep(1)
+            self.controller.cancel_indexing()
 
-        def run_indexing():
-            total_docs = self.controller.get_total_documents()
-            with Progress(
-                "[progress.description]{task.description}",
-                BarColumn(),
-                TextColumn("{task.completed}/{task.total}"),
-                console=self.console
-            ) as progress:
-                task = progress.add_task("Indexing files...", total=total_docs)
-
-                def update_progress(current, total):
-                    progress.update(task, completed=current)
-
-                self.controller.index_documents(progress_callback=update_progress)
-
-            self.console.print("[bold green]Indexing finished.[/bold green]")
-
-        t = threading.Thread(target=run_indexing)
-        t.start()
-        t.join() 
+        self.console.print("[bold green]Indexing finished.[/bold green]")
                 
     def do_activate_rag_in_search(self, arg):
         """Activate RAG in semantic search."""
@@ -136,8 +152,6 @@ class LuminAICommand(Cmd):
         else:
             self.console.print("[bold red]Error:[/bold red] Failed to generate response.")
     
-
         
 if __name__ == "__main__":
-    embeddings.create_database()
     LuminAICommand().cmdloop()
