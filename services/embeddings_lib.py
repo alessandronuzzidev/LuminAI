@@ -67,9 +67,13 @@ def query_embedding(query, threshold=0.7, top_k=None):
     """
     repository = get_repository()
 
+    print(f"Searching for query: {query}")
+
     retriever = repository.as_retriever(score_threshold=threshold, top_k=top_k)
     
-    results = retriever.invoke(query)
+    results = retriever.get_relevant_documents(query)
+    
+    print(f"Found {len(results)} results for query: {query}")
 
     output = set()
     for doc in results:
@@ -94,8 +98,7 @@ def create_database():
     
     embedding_model = embedding_models[model_name]()
     initialize_repository(embedding_model.embedding_model)
-
-
+    
 def restart():
     """
     Delete vector database.

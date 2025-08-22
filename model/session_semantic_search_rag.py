@@ -1,9 +1,10 @@
 import subprocess
 import requests
-import socket, json
+
 from .llama_llm import LlamaLLM
 from model.abstract_model_session import AbstractModelSession
 from repository.configuration_file import ConfigurationFile
+import services.embeddings_lib as embeddings 
 
 class SessionSemanticSearchRag(AbstractModelSession):
     """
@@ -48,39 +49,16 @@ class SessionSemanticSearchRag(AbstractModelSession):
         Send a message in the current session using a socket.
         Reads the full response even if es más grande de 1024 bytes (opción C).
         """
-        top_k = 5
+
+        top_k = 3
         message_normalized = self.llm.query_normalizer(message)
+        print(f"Normalized message: {message_normalized}")
         
         config_file_repo = ConfigurationFile()
         config_file = config_file_repo.load_config_file()
         
-        s = socket.socket()
-        s.connect(("127.0.0.1", 65432))
-        
-        task = {
-            "search": True,
-            "message": message_normalized,
-            "similarity_threshold": config_file["similarity_threshold_value"],
-            "top_k": top_k
-        }
-        
-        s.sendall(json.dumps(task).encode())
-
-        buffer = b""
-        while True:
-            chunk = s.recv(1024)
-            if not chunk:
-                break
-            buffer += chunk
-        
-        s.close()
-        
-        try:
-            data = json.loads(buffer.decode())
-        except json.JSONDecodeError:
-            return "Error: la respuesta del servidor no es válida."
-        
-        files_paths = data.get("results", [])
+        embeddings.create_database()
+        files_paths = embeddings.query_embedding(message_normalized, config_file["similarity_threshold_value"], top_k=top_k)
 
         answer = self.llm.generate_response(message_normalized, files_paths)
         

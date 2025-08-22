@@ -1,9 +1,9 @@
 import os
 from .llama_llm import LlamaLLM
 from repository.configuration_file import ConfigurationFile
-import socket, json
 
 from model.abstract_model_session import AbstractModelSession
+import services.embeddings_lib as embeddings 
 
 class SessionSemanticSearch(AbstractModelSession):
     """
@@ -23,55 +23,29 @@ class SessionSemanticSearch(AbstractModelSession):
     
     def generate_response(self, message):
         """
-        Send a message in the current session and receive the full response from the LLM.
+        Send a message in the current session.
+
+        :param message: The message to be sent.
+        :return: The response from the LLM.
         """
         top_k = 10
         self.messages.append(message)
         message_normalized = self.llm.query_normalizer(message)
-        
         config_file_repo = ConfigurationFile()
         config_file = config_file_repo.load_config_file()
-        
-        s = socket.socket()
-        s.connect(("127.0.0.1", 65432))
-        
-        task = {
-            "search": True,
-            "message": message_normalized,
-            "similarity_threshold": config_file["similarity_threshold_value"],
-            "top_k": top_k
-        }
-        
-        s.sendall(json.dumps(task).encode())
-        
-        buffer = b""
-        while True:
-            chunk = s.recv(1024)
-            if not chunk:
-                break
-            buffer += chunk
-        
-        s.close()
-        
-        try:
-            data = json.loads(buffer.decode())
-        except json.JSONDecodeError:
-            response_text = "Error: la respuesta del servidor no es un JSON válido."
-            self.messages.append(response_text)
-            return response_text
-
-        files_paths = data.get("results", [])
+        embeddings.create_database()
+        files_paths = embeddings.query_embedding(message_normalized, config_file["similarity_threshold_value"], top_k=top_k)
         if not files_paths:
             response_text = "No se encontraron documentos relevantes. Prueba a bajar el nivel de similitud en la configuración."
             self.messages.append(response_text)
             return response_text
-
         response_text = "Los documentos más similares son:\n"
         for file_path in files_paths:
             _, filename = os.path.split(file_path)
-            response_text += f"- {filename} ({file_path})\n"
+            response_text += f"- {filename}({file_path})\n"
 
         self.messages.append(response_text)
+
         return response_text
 
     def get_messages(self):

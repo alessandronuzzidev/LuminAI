@@ -64,9 +64,8 @@ class LlamaLLM:
             Entrada: "{query}"
             Salida:
         """
-        
         prompt = ChatPromptTemplate.from_template(template)
-        formatted_prompt_str = prompt.format(query=message).lower()
+        formatted_prompt_str = prompt.format_messages(query=message)
         answer = self.model.invoke(formatted_prompt_str)
         return answer
     
@@ -93,11 +92,12 @@ class LlamaLLM:
         extractor = TextExtractorService()
     
         responses = []
-
-        prompt_template = ChatPromptTemplate.from_template(template)
         
         for file_path in files_paths:
+            print(f"File path: {file_path}")
             content = extractor.extract_text(file_path)
+            
+            prompt_template = ChatPromptTemplate.from_template(template)
 
             formatted_prompt = prompt_template.format_messages(
                 query=message_normalized,
@@ -106,6 +106,7 @@ class LlamaLLM:
             
             try:
                 llm_response = self.model.invoke(formatted_prompt)
+                print(f"File path response generated: {file_path}")
                 if llm_response.__contains__("LUMINAITOKEN1234567890"):
                     continue
             except Exception as e:
@@ -113,7 +114,7 @@ class LlamaLLM:
 
             _, filename = os.path.split(file_path)
 
-            responses.append(f"<b>{filename}</b> <i>{file_path}</i>:<br>{llm_response.strip()}")       
+            responses.append(f"{filename} ({file_path}):\n{llm_response.strip()}")       
         
         if responses == []:
             return "No se ha encontrado información relevante en los documentos."
