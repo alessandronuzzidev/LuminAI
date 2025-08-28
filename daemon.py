@@ -123,12 +123,16 @@ save_pid(pid_file)
 event_handler = WatcherHandler()
 
 WATCH_PATH = load_watch_path()
-start_observer(WATCH_PATH)
+if WATCH_PATH != "":
+    start_observer(WATCH_PATH)
 
 try:
     while True:
+        current_path = load_watch_path()
+        if current_path == "" == WATCH_PATH:
+            time.sleep(30)
+            break
         if not paused and observer is not None and observer.is_alive():
-            current_path = load_watch_path()
             if current_path != WATCH_PATH:
                 WATCH_PATH = current_path
                 start_observer(WATCH_PATH)

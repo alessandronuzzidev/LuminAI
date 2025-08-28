@@ -1,6 +1,6 @@
 {
-    "path": "/Users/alessandronuzziherrero/LuminAI/LuminAI/dataset/cvs",
-    "checkbox_rag_value": true,
+    "path": "/Users/alessandronuzziherrero/LuminAI/LuminAI/dataset/films",
+    "checkbox_rag_value": false,
     "similarity_threshold_value": 0.25,
     "embedding_model": "nomic-embed-text",
     "llm_model": "llama3.2"

@@ -42,7 +42,7 @@ class SessionSemanticSearch(AbstractModelSession):
         response_text = "Los documentos más similares son:\n"
         for file_path in files_paths:
             _, filename = os.path.split(file_path)
-            response_text += f"- {filename}({file_path})\n"
+            response_text += f"- {filename} ({file_path})\n"
 
         self.messages.append(response_text)
 
