@@ -4,6 +4,7 @@ import subprocess
 class NomicEmbedding:
     
     def __init__(self):
+        """Initialize the Nomic embedding model."""
         subprocess.run(["ollama", "pull", "nomic-embed-text"], 
                        check=True,
                        stdout=subprocess.DEVNULL,

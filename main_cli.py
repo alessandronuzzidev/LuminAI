@@ -78,6 +78,7 @@ class LuminAICommand(Cmd):
             self.console.print("[bold red]Error:[/bold red] Configuration file not found.")
         
     def do_configure_path(self, path):
+        """Configure the path for the file loader and start indexing."""
         config_file = self.controller.load_config_file()
         if config_file["path"] == path:
             self.console.print("[bold red]Path is already set to the specified value.[/bold red]")

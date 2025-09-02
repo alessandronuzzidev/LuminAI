@@ -19,14 +19,17 @@ class ConfigurationUI(QWidget):
         self.create_interface()
         
     def setup_window(self):
+        """ Set up the main window properties."""
         self.setWindowTitle("LuminAI")
         self.setStyleSheet(self.general_style())
     
     def handle_chat_click(self):
+        """ Handle the chat button click."""
         if self.on_chat_click:
             self.on_chat_click()
     
     def create_interface(self):
+        """ Create the main interface layout."""
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
@@ -35,6 +38,7 @@ class ConfigurationUI(QWidget):
         main_layout.addWidget(self.create_content_area(), 1)
     
     def create_navbar(self):
+        """ Create the navigation bar at the top of the window."""
         navbar_layout = QHBoxLayout()
         navbar_layout.setContentsMargins(20, 10, 20, 10)
         navbar_layout.setSpacing(15)
@@ -62,11 +66,13 @@ class ConfigurationUI(QWidget):
         return navbar
     
     def select_dir(self):
+        """ Open a directory selection dialog and update the path input."""
         folder = QFileDialog.getExistingDirectory(self, "Selecciona una carpeta")
         if folder:
             self.path_input.setText(folder)
             
     def handle_path_input(self):
+        """ Handle the path input and start indexing if changed."""
         path = self.path_input.text()
         if path != self.old_config["path"]:
             self.controller.update_path(path)
@@ -74,6 +80,7 @@ class ConfigurationUI(QWidget):
             self.start_indexing()
 
     def update_progress_from_manager(self):
+        """ Update the progress dialog based on the controller's progress."""
         current, total = self.controller.get_progress()
         if current is None or total is None:
             return
@@ -86,6 +93,7 @@ class ConfigurationUI(QWidget):
             self.progress_dialog.close()
                         
     def add_path_input(self, content_layout):
+        """ Add the path input section to the content layout."""
         title = QLabel("Configuración de ruta de documentos")
         title.setStyleSheet(self.title_style())
         
@@ -128,6 +136,7 @@ class ConfigurationUI(QWidget):
 
 
     def add_search_options(self, content_layout):
+        """ Add the search options section to the content layout."""
         padded_container = QWidget()
         padded_layout = QVBoxLayout()
         padded_layout.setContentsMargins(10, 10, 10, 10)
@@ -198,6 +207,7 @@ class ConfigurationUI(QWidget):
         content_layout.addWidget(padded_container)
 
     def update_model_selection(self, selected_index):
+        """ Update the model selection buttons based on the selected index."""
         for i, button in enumerate(self.model_buttons):
             if i == selected_index:
                 button.setText("Seleccionado")
@@ -209,6 +219,7 @@ class ConfigurationUI(QWidget):
         self.selected_model = self.models_data[selected_index]
         
     def show_confirmation_dialog(self):
+        """ Show a confirmation dialog before saving the configuration."""
         dialog = QMessageBox(self)
         dialog.setWindowTitle("Confirmar guardado")
         dialog.setText("¿Deseas guardar la configuración actual?")
@@ -222,11 +233,13 @@ class ConfigurationUI(QWidget):
             self.save_configuration()
             
     def cancel_indexing(self):
+        """" Cancel the indexing process. """
         self.controller.cancel_indexing()
         self.progress_timer.stop()
         self.progress_dialog.close()
             
     def start_indexing(self):
+        """ Start the indexing process and show a progress dialog."""
         self.progress_dialog = QProgressDialog("Indexando archivos...", "Cancelar", 0, 0, self)
         self.progress_dialog.setWindowTitle("Indexando")
         self.progress_dialog.setWindowModality(Qt.ApplicationModal)
@@ -240,6 +253,7 @@ class ConfigurationUI(QWidget):
         self.controller.index_documents()       
 
     def save_configuration(self):
+        """ Save the current configuration settings."""
         path = self.path_input.text()
         checkbox_rag_value = self.checkbox_rag.isChecked()
         similarity_threshold_value = self.spinbox_threshold.value()
@@ -249,6 +263,7 @@ class ConfigurationUI(QWidget):
             self.start_indexing()
           
     def create_content_area(self):
+        """ Create the main content area with configuration options."""
         content_layout = QVBoxLayout()
         content_layout.setContentsMargins(20, 20, 20, 20)
         content_layout.setSpacing(20)

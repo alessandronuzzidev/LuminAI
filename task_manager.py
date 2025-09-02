@@ -33,18 +33,22 @@ class TaskManager:
         self._initialized = True
 
     def add_task(self, task):
+        """ Add a new task to the queue."""
         self.total_tasks += 1
         self.event_queue.put(task)
 
     def clear_queue(self):
+        """ Clear all pending tasks in the queue."""
         self.event_queue.queue.clear()
         self.total_tasks = 0
         self.completed_tasks = 0
 
     def get_progress(self):
+        """ Return the number of completed tasks and total tasks. """
         return self.completed_tasks, self.total_tasks
 
     def _worker(self):
+        """ Worker thread that processes tasks from the queue."""
         while True:
             task = self.event_queue.get()
             
@@ -60,7 +64,7 @@ class TaskManager:
             self.event_queue.task_done()
 
     def _start_socket_server(self):
-        """Servidor TCP que recibe tareas en JSON y las encola"""
+        """TCP server that receives JSON tasks and queue them."""
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.bind((self.host, self.port))
         server.listen()
@@ -71,7 +75,7 @@ class TaskManager:
             threading.Thread(target=self._handle_client, args=(conn, addr), daemon=True).start()
 
     def _handle_client(self, conn, addr):
-        """Recibe datos de un cliente y los añade como tarea"""
+        """Receives client data and processes tasks."""
         try:
             data = conn.recv(4096)
             if not data:

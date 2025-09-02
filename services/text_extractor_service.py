@@ -26,6 +26,11 @@ class TextExtractorService:
         }
         
     def extract_text(self, path_str):
+        """
+        Extract text from a file based on its extension.
+        :param path_str: The path to the file.
+        :return: A dictionary with extracted text and metadata.
+        """
         if not os.path.isfile(path_str):
             return
         
@@ -40,6 +45,10 @@ class TextExtractorService:
         return doc
     
     def extract_and_save_text(self, path_str):
+        """
+        Extract text from a file and save its embedding.
+        :param path_str: The path to the file.
+        """
         if path_str.__contains__(".DS_Store"):
             return
         doc = self.extract_text(path_str)

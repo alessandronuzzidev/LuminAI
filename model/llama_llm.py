@@ -31,12 +31,14 @@ class LlamaLLM:
             "Por último, no uses markdown, solo texto plano. ")]
         
     def send_message(self, message):
+        """Execute a message in the current session."""
         self.messages.append(HumanMessage(content=message))
         reply = self.model.invoke(self.message)
         self.messages.append(reply)
         return reply
 
     def query_normalizer(self, message):
+        """Normalize the user query to optimize it for semantic search."""
         template = """
             Eres un preprocesador de lenguaje natural.  
             Tu tarea es recibir consultas en lenguaje coloquial y transformarlas en frases limpias, breves y optimizadas para búsqueda semántica.  
@@ -70,6 +72,7 @@ class LlamaLLM:
         return answer
     
     def generate_response(self, message_normalized, files_paths, chunk_size=1000, overlap=100):
+        """Generate a response based on the normalized message and relevant file paths."""
         template_chunk = """
             Recibes un fragmento de un documento y una consulta del usuario. 
             Tu tarea es generar un resumen breve, directo y conciso, de **máximo 3 frases**, 
@@ -101,9 +104,8 @@ class LlamaLLM:
             return chunks
         
         already_seen = set()
-        # Procesar documentos en chunks
+
         for file_path in files_paths:
-            #print("Extrayendo texto de:", file_path)
             doc = extractor.extract_text(file_path)
             chunks = chunk_text(doc["content"], chunk_size, overlap)
 

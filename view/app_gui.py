@@ -43,6 +43,7 @@ class App_GUI(QWidget):
         self.resize(1100, 720)
         
     def update_progress_from_manager(self):
+        """ Update the progress dialog based on the controller's progress."""
         current, total = self.controller.get_progress()
         if current is None or total is None:
             return
@@ -55,12 +56,15 @@ class App_GUI(QWidget):
             self.progress_dialog.close()
             
     def cancel_indexing(self):
+        """ Cancel the indexing process. """
         self.controller.cancel_indexing()
         self.progress_timer.stop()
         self.progress_dialog.close()
 
     def go_to_configuration_screen(self):
+        """ Switch to the configuration screen."""
         self.stacked_widget.setCurrentIndex(1)
 
     def go_to_chat_screen(self):
+        """ Switch to the chat screen."""
         self.stacked_widget.setCurrentIndex(0)

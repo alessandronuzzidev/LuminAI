@@ -31,10 +31,12 @@ class ChatUI(QWidget):
         self.create_interface()
 
     def setup_window(self):
+        """ Set up the main window properties."""
         self.setWindowTitle("LuminAI")
         self.setStyleSheet(self.general_style())
         
     def create_llm_message(self, text):
+        """ Create and display a message from the LLM."""
         message = QLabel(text.replace('\n', '<br>'))
         message.setWordWrap(True)
         message.setTextFormat(Qt.RichText)
@@ -50,6 +52,7 @@ class ChatUI(QWidget):
         )
         
     def show_llm_response(self, answer):
+        """ Display the LLM's response in the chat area."""
         if hasattr(self, "loading_label") and self.loading_label:
             self.chat_content_layout.removeWidget(self.loading_label)
             self.loading_label.deleteLater()
@@ -59,17 +62,20 @@ class ChatUI(QWidget):
         self.send_button.setEnabled(True) 
     
     def call_llm_and_update(self, text):
+        """ Call the LLM to get a response and update the chat area."""
         answer = self.controller.send_message_to_llm(text)
 
         QTimer.singleShot(0, lambda: self.show_llm_response(answer))
         
     def scroll_to_bottom(self):
+        """ Scroll the chat area to the bottom."""
         QApplication.processEvents()
         self.chat_scroll_area.verticalScrollBar().setValue(
             self.chat_scroll_area.verticalScrollBar().maximum()
         )
        
     def create_user_message(self): 
+        """ Create and display a user message in the chat area."""
         text = self.input_text.toPlainText().strip()
         if not text:
             return
@@ -106,6 +112,7 @@ class ChatUI(QWidget):
         self.thread.start()
         
     def restart_chat(self):
+        """ Restart the chat session and clear the chat area."""
         self.controller.restart_chat()
         while self.chat_content_layout.count() > 0:
             item = self.chat_content_layout.takeAt(0)
@@ -116,11 +123,13 @@ class ChatUI(QWidget):
         self.chat_content_layout.addStretch()
         
     def handle_config_click(self):
+        """ Handle the configuration button click."""
         if self.on_config_click:
             self.on_config_click()
 
 
     def create_interface(self):
+        """ Create the main interface layout."""
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
@@ -133,6 +142,7 @@ class ChatUI(QWidget):
         self.reset_button.clicked.connect(self.restart_chat)
 
     def create_navbar(self):
+        """ Create the navigation bar at the top of the window."""
         navbar_layout = QHBoxLayout()
         navbar_layout.setContentsMargins(20, 10, 20, 10)
         navbar_layout.setSpacing(15)
@@ -149,7 +159,6 @@ class ChatUI(QWidget):
         self.reset_button.setIconSize(QSize(24, 24))
         self.reset_button.setStyleSheet(self.navbar_button_style())
         self.reset_button.setCursor(Qt.PointingHandCursor)
-        #reset_button.clicked.connect(self.create_user_message)
 
         config_button = QPushButton()
         config_icon = QIcon("assets/config_final.svg")
@@ -170,6 +179,7 @@ class ChatUI(QWidget):
         return navbar
 
     def create_chat_area(self):
+        """ Create the chat area with a scrollable view."""
         self.chat_scroll_area = QScrollArea()
         self.chat_scroll_area.setWidgetResizable(True)
         self.chat_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -187,6 +197,7 @@ class ChatUI(QWidget):
         return self.chat_scroll_area
 
     def create_input_area(self):
+        """ Create the input area at the bottom of the window."""
         input_layout = QHBoxLayout()
         input_layout.setContentsMargins(20, 20, 20, 20)
 
@@ -213,7 +224,6 @@ class ChatUI(QWidget):
         self.microphone_button.setIconSize(QSize(24, 24))
         self.microphone_button.setFixedSize(40, 40)
         self.microphone_button.setStyleSheet(self.button_style())
-        #buttons_layout.addWidget(self.microphone_button)
 
         input_layout.addLayout(buttons_layout)
 

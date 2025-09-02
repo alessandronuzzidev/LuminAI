@@ -18,6 +18,7 @@ class ChromaIdGenerator:
                 f.write("0")
 
     def next_id(self):
+        """Generate the next unique ID."""
         with open(self.file_path, "r+") as f:
             last_id = int(f.read())
             new_id = last_id + 1
@@ -27,6 +28,7 @@ class ChromaIdGenerator:
         return str(new_id)
     
     def reset(self):
+        """Reset the ID counter to zero."""
         with open(self.file_path, "w") as f:
             f.write("0")
         return "0"
@@ -59,6 +61,12 @@ class ChromaRepository(AbstractVectorDBRepository):
         self.id_generator = ChromaIdGenerator()
 
     def add(self, page_content, metadata=None):
+        """
+        Adds a document to the vector database after splitting it into chunks.
+        :param page_content: The content of the document to add.
+        :param metadata: Optional metadata to associate with the document.
+        :return: List of IDs of the added chunks.
+        """
         text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=800,
             chunk_overlap=100
@@ -78,6 +86,13 @@ class ChromaRepository(AbstractVectorDBRepository):
         return ids
         
     def query(self, query, top_k=10, filter=None):
+        """
+        Queries the vector database for similar documents.
+        :param query: The query string.
+        :param top_k: The number of top similar documents to return.
+        :param filter: Optional metadata filter to apply.
+        :return: List of similar documents.
+        """
         docs = self.vector_store.similarity_search_with_score(
             query=query,
             k=top_k,

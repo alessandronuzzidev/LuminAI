@@ -18,6 +18,7 @@ class SessionSemanticSearchRag(AbstractModelSession):
 
         
     def is_ollama_running(self):
+        """Check if the Ollama server is running."""
         try:
             response = requests.get("http://localhost:11434")
             return response.status_code == 200
@@ -25,6 +26,7 @@ class SessionSemanticSearchRag(AbstractModelSession):
             return False
 
     def start_ollama_server(self):
+        """Start the Ollama server if it's not already running."""
         if self.is_ollama_running():
             print("Ollama ya está en ejecución.")
             return
@@ -52,7 +54,6 @@ class SessionSemanticSearchRag(AbstractModelSession):
 
         top_k = 3
         message_normalized = self.llm.query_normalizer(message)
-        #print(f"Normalized message: {message_normalized}")
         
         config_file_repo = ConfigurationFile()
         config_file = config_file_repo.load_config_file()

@@ -9,11 +9,13 @@ import socket
 import json
 
 def load_watch_path():
+    """ Load the watch path from the configuration file."""
     with open("data/config.json", "r") as f:
         config = json.load(f)
     return config["path"]
 
 def save_pid(file_path):
+    """ Save the current process ID to a file."""
     pid_file = file_path
     with open(pid_file, "w") as f:
         f.write(str(os.getpid()))
@@ -49,12 +51,14 @@ def compare_snapshots(old, new):
             print(f"File modified: {f}")
 
 def pause(sig, frame):
+    """ Pause the monitoring and take a snapshot."""
     global paused, snapshot
     paused = True
     snapshot = take_snapshot(WATCH_PATH)
     print("Monitor paused, snapshot saved")
 
 def resume(sig, frame):
+    """ Resume monitoring and compare with the snapshot."""
     global paused, snapshot
     paused = False
     new_snapshot = take_snapshot(WATCH_PATH)
@@ -99,6 +103,7 @@ class WatcherHandler(FileSystemEventHandler):
             self.handle_event(event.src_path, "deleted")
 
 def start_observer(path):
+    """ Start or restart the observer for the given path."""
     global observer
     if observer:
         observer.stop()
