@@ -69,14 +69,13 @@ class LlamaLLM:
         answer = self.model.invoke(formatted_prompt_str)
         return answer
     
-    def generate_response(self, message_normalized, files_paths):
-        template = template = """
-            Recibes el texto de un documento y una consulta del usuario. Tu tarea es generar un resumen breve, 
-            directo y conciso, de **máximo 5 frases**, enfocándote únicamente en la información del documento 
-            que responda a la consulta. Evita frases introductorias como "El documento trata sobre..." o 
-            "Claro, aquí tienes un resumen...". Ve al grano y explica el contenido relevante.
+    def generate_response(self, message_normalized, files_paths, chunk_size=1000, overlap=100):
+        template_chunk = """
+            Recibes un fragmento de un documento y una consulta del usuario. 
+            Tu tarea es generar un resumen breve, directo y conciso, de **máximo 3 frases**, 
+            enfocándote únicamente en la información del fragmento que responda a la consulta. 
 
-            Documento:
+            Documento (fragmento):
             {document_text}
 
             Consulta del usuario:
@@ -86,37 +85,51 @@ class LlamaLLM:
             - Si no encuentras información que esté claramente relacionada con la consulta, responde **solo** con el token especial:
             LUMINAITOKEN1234567890
             - Si hay información parcialmente relevante pero no del todo segura, haz un resumen directo sin incluir el token.
-            - Limita la respuesta a un máximo de 5 frases.
+            - Limita la respuesta a un máximo de 3 frases.
         """
 
         extractor = TextExtractorService()
-    
-        responses = []
+        all_relevant_fragments = []
+
+        def chunk_text(text, size, overlap):
+            chunks = []
+            start = 0
+            while start < len(text):
+                end = min(len(text), start + size)
+                chunks.append(text[start:end])
+                start += size - overlap
+            return chunks
         
+        already_seen = set()
+        # Procesar documentos en chunks
         for file_path in files_paths:
-            print(f"File path: {file_path}")
-            content = extractor.extract_text(file_path)
-            
-            prompt_template = ChatPromptTemplate.from_template(template)
+            #print("Extrayendo texto de:", file_path)
+            doc = extractor.extract_text(file_path)
+            chunks = chunk_text(doc["content"], chunk_size, overlap)
 
-            formatted_prompt = prompt_template.format_messages(
-                query=message_normalized,
-                document_text=content
-            )
-            
-            try:
-                llm_response = self.model.invoke(formatted_prompt)
-                print(f"File path response generated: {file_path}")
-                if llm_response.__contains__("LUMINAITOKEN1234567890"):
-                    continue
-            except Exception as e:
-                llm_response = f"Error al procesar el archivo: {e}"
+            prompt_chunk = ChatPromptTemplate.from_template(template_chunk)
 
-            _, filename = os.path.split(file_path)
+            for chunk in chunks:
+                formatted_prompt = prompt_chunk.format_messages(
+                    query=message_normalized,
+                    document_text=chunk
+                )
+                try:
+                    llm_response = self.model.invoke(formatted_prompt).strip()
+                    if "LUMINAITOKEN1234567890" not in llm_response:
+                        if file_path not in already_seen:
+                            already_seen.add(file_path)
+                            all_relevant_fragments.append((file_path, llm_response))
+                except Exception as e:
+                    all_relevant_fragments.append(f"[Error en {file_path}: {e}]")
 
-            responses.append(f"{filename} ({file_path}):\n{llm_response.strip()}")       
-        
-        if responses == []:
+        if not all_relevant_fragments:
             return "No se ha encontrado información relevante en los documentos."
-        return "\n\n".join(responses)
+        
+        final_response = "He encontrado información relevante en los siguientes documentos:\n"
+        for tuple_aux in all_relevant_fragments:
+            _, filename = os.path.split(tuple_aux[0])
+            final_response += f"- {filename} ({tuple_aux[0]}):\n {tuple_aux[1]}\n"
+
+        return final_response
         

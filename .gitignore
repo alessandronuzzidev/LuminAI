@@ -12,3 +12,4 @@ data/id_counter.txt
 data/monitor.pid
 data/event_queue.json
 model_experiments/**
+evaluation/**

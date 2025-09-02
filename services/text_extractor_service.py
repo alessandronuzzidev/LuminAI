@@ -40,6 +40,8 @@ class TextExtractorService:
         return doc
     
     def extract_and_save_text(self, path_str):
+        if path_str.__contains__(".DS_Store"):
+            return
         doc = self.extract_text(path_str)
         metadata = {}
         

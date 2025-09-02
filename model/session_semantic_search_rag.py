@@ -52,7 +52,7 @@ class SessionSemanticSearchRag(AbstractModelSession):
 
         top_k = 3
         message_normalized = self.llm.query_normalizer(message)
-        print(f"Normalized message: {message_normalized}")
+        #print(f"Normalized message: {message_normalized}")
         
         config_file_repo = ConfigurationFile()
         config_file = config_file_repo.load_config_file()

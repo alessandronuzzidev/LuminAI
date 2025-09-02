@@ -7,7 +7,7 @@ from repository.configuration_file import ConfigurationFile
 from repository.embedding_models_file import EmbeddingModelsFile
 
 import socket, json
-
+import time
 
 class Controller(AbstractController):
     def __init__(self):
@@ -115,6 +115,8 @@ class Controller(AbstractController):
         doc_list = []
         for root, _, files in os.walk(path):
             for f in files:
+                if f == ".DS_Store":
+                    continue
                 doc_list.append(os.path.join(root, f))
         return doc_list
 

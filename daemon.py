@@ -128,10 +128,11 @@ if WATCH_PATH != "":
 
 try:
     while True:
-        current_path = load_watch_path()
-        if current_path == "" == WATCH_PATH:
-            time.sleep(30)
-            break
+        if not paused:
+            current_path = load_watch_path()
+            if current_path == "" == WATCH_PATH:
+                time.sleep(30)
+                break
         if not paused and observer is not None and observer.is_alive():
             if current_path != WATCH_PATH:
                 WATCH_PATH = current_path
