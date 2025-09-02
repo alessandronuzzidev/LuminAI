@@ -13,3 +13,4 @@ data/monitor.pid
 data/event_queue.json
 model_experiments/**
 evaluation/**
+.vscode/**
