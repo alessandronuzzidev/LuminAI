@@ -15,7 +15,7 @@ Features:
 
 - 📑 **Enhanced Search Results**: enrich search results with retrieval-augmented generation (RAG) using Ollama or other local LLMs.
 
-# Execute software from repository
+# Installation & Execution
 
 1. Clone repository
 2. Create and activate virtual environment
