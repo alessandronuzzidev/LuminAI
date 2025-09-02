@@ -1,21 +1,19 @@
 # Description
 LuminAI is an AI-powered semantic search system for Unix systems. It leverages local LLMs and embeddings to perform intelligent document retrieval: find the exact content you need inside your local files — even if you don’t know the filename or exact location.
 
-✨ Features
+Features:
 
-🔍 Semantic Search: retrieve information based on meaning, not just keywords.
+- 🔍 **Semantic Search**: retrieve information based on meaning, not just keywords.
 
-📂 Recursive Indexing: automatically indexes all files in a selected directory.
+- 📂 **Recursive Indexing**: automatically indexes all files in a selected directory.
 
-🔄 Auto-update: detects and updates new or modified files in real time.
+- 🔄 **Auto-update**: detects and updates new or modified files in real time.
 
-🖥️ Dual Interface: use it via a clean GUI or a fast CLI.
+- 🖥️ **Dual Interface**: use it via a clean GUI or a fast CLI.
 
-⚙️ Configurable: choose document path, embeddings model, and vector database backend.
+- ⚙️ **Configurable**: choose document path and similarity threshold.
 
-📑 Document Summaries: generate summaries and extract keywords from indexed files (optional).
-
-💾 Local RAG: run retrieval-augmented generation (RAG) locally with Ollama or other LLMs.
+- 📑 **Enhanced Search Results**: enrich search results with retrieval-augmented generation (RAG) using Ollama or other local LLMs.
 
 # Execute software from repository
 
